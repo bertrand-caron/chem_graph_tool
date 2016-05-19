@@ -26,6 +26,10 @@ PATTERNS = {
         ('C', 'C', 'C', 'C', 'O', 'H'),
         ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5)),
     ),
+    'benzene': (
+        ('C', 'C', 'C', 'C', 'C', 'C', 'J', 'J', 'J', 'J', 'J', 'J'),
+        ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 6), (1, 7), (2, 8), (3, 9), (4, 10), (5, 11)),
+    ),
 }
 
 ATOM_CLASSES = {
@@ -153,11 +157,9 @@ for (moiety, graph_list) in interpreted_pattern_graphs:
     ]
 
 def moieties_in_graph(super_graph):
-    for (moiety, graph_list) in interpreted_pattern_graphs:
-        print 'Testing moiety: {0}'.format(moiety)
-        for (i, pattern_graph) in enumerate(graph_list):
-            print '    Testing for pattern: {0}'.format(i)
-            results = topology.subgraph_isomorphism(
+    def match(moiety, graph_list):
+        return any([
+            topology.subgraph_isomorphism(
                 pattern_graph,
                 super_graph,
                 vertex_label=(
@@ -165,18 +167,29 @@ def moieties_in_graph(super_graph):
                     super_graph.vertex_properties['type'],
                 ),
             )
-            print '    Results are: {0}'.format(results)
+        for (i, pattern_graph) in enumerate(graph_list)
+        ])
 
-TEST_PDB = 'data/ethanol.pdb'
+    return [
+        moiety
+        for (moiety, graph_list) in interpreted_pattern_graphs
+        if match(moiety, graph_list)
+    ]
+
+from glob import glob
+
+TEST_PDBS = glob('data/*.pdb')
 
 if __name__ == '__main__':
-    with open(TEST_PDB) as fh:
-        molecule_graph = graph_from_pdb(fh.read())
+    for test_pdb in TEST_PDBS:
+        with open(test_pdb) as fh:
+            molecule_graph = graph_from_pdb(fh.read())
 
-    draw_graph(
-        molecule_graph,
-        fnme=TEST_PDB.replace('.pdb', '.png')
-    )
-    molecule_graph.save(TEST_PDB.replace('.pdb', '.gt'))
+        draw_graph(
+            molecule_graph,
+            fnme=test_pdb.replace('.pdb', '.png')
+        )
+        molecule_graph.save(test_pdb.replace('.pdb', '.gt'))
 
-    moieties_in_graph(molecule_graph)
+        print test_pdb
+        print moieties_in_graph(molecule_graph)
