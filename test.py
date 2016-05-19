@@ -1,5 +1,6 @@
 from itertools import cycle, izip, product
 from os.path import exists, join
+from re import search
 
 try:
     from graph_tool.all import Graph, load_graph, graph_draw
@@ -15,33 +16,94 @@ N = 10
 
 PATTERNS = {
     'alcohol I': (
-        ('J', 'H', 'H', 'C', 'O', 'H'),
-        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5)),
+        ('J', 'H', 'H', 'C4', 'O2', 'H',),
+        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
     ),
     'alcohol II': (
-        ('C', 'C', 'H', 'C', 'O', 'H'),
-        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5)),
+        ('C', 'C', 'H', 'C4', 'O2', 'H',),
+        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
     ),
     'alcohol III': (
-        ('C', 'C', 'C', 'C', 'O', 'H'),
-        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5)),
+        ('C', 'C', 'C', 'C4', 'O2', 'H',),
+        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
     ),
     'benzene': (
-        ('C', 'C', 'C', 'C', 'C', 'C', 'J', 'J', 'J', 'J', 'J', 'J'),
-        ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 6), (1, 7), (2, 8), (3, 9), (4, 10), (5, 11)),
+        ('C3', 'C3', 'C3', 'C3', 'C3', 'C3',),
+        ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0),)
     ),
+    'cyclohexane': (
+        ('C4', 'C4', 'C4', 'C4', 'C4', 'C4',),
+        ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0),),
+    ),
+}
+
+MONOVALENT = (1,)
+
+DEFAULT_VALENCES = {
+    'H': MONOVALENT,
+    'F': MONOVALENT,
+    'BR': MONOVALENT,
+    'CL': MONOVALENT,
+    'I': MONOVALENT,
+    'C': (2, 3, 4,),
+    'O': (1, 2,),
 }
 
 ATOM_CLASSES = {
-    'J': ('C', 'H'),
-    'X': ('F', 'BR', 'CL', 'I'),
+    'J': ('C', 'H',),
+    'X': ('F', 'BR', 'CL', 'I',),
 }
 
+# Construct DEFAULT_VALENCES of atom_classes automatically
+for (atom_class_name, atom_class_atoms) in ATOM_CLASSES.items():
+    DEFAULT_VALENCES[atom_class_name] = tuple(
+        set(
+            reduce(
+                lambda acc, e: acc + e,
+                [DEFAULT_VALENCES[atom_type] for atom_type in atom_class_atoms],
+                (),
+            )
+        )
+    )
+
+def parse_atom_class(atom_class):
+    m =  search('^([A-Z]+){?([0-9]?),?([0-9]?)}?', atom_class)
+    assert m
+    return m
+
 def atoms_for_class(atom_class):
-    if atom_class in ATOM_CLASSES:
-        return ATOM_CLASSES[atom_class]
+    m = parse_atom_class(atom_class)
+
+    type_class = m.group(1)
+
+    if type_class in ATOM_CLASSES:
+        return ATOM_CLASSES[type_class]
     else:
-        return (atom_class,)
+        return (type_class,)
+
+def valences_for_class(atom_class):
+    m = parse_atom_class(atom_class)
+
+    if not m.group(2) or not m.group(3):
+        start = [int(group) for group in (m.group(2), m.group(3)) if group]
+        if len(start) == 0:
+            return DEFAULT_VALENCES[atom_class]
+        else:
+            start = start[0]
+        end = start + 1
+    else:
+        start, end = int(m.group(2)), int(m.group(3)) + 1
+
+    return tuple(range(start, end))
+
+def types_and_valences_for_class(atom_class):
+    return map(
+        lambda (atom_class, valence): '{0}{1}'.format(atom_class, valence),
+        product(
+            atoms_for_class(atom_class),
+            valences_for_class(atom_class),
+        ),
+    )
 
 def atom_classes(types):
     return sum([1 for a_type in types if a_type in ATOM_CLASSES.keys()])
@@ -73,7 +135,7 @@ def pattern_graph_for_pattern(pattern):
 def graphs_for_pattern_graph(pattern_graph):
     get_vertex_type = lambda v: pattern_graph.vp.type[v]
 
-    type_permutations = product(*[atoms_for_class(get_vertex_type(v)) for v in pattern_graph.vertices()])
+    type_permutations = product(*[types_and_valences_for_class(get_vertex_type(v)) for v in pattern_graph.vertices()])
 
     graphs = []
     for type_permutation in type_permutations:
@@ -181,7 +243,14 @@ from glob import glob
 
 TEST_PDBS = glob('data/*.pdb')
 
+def test_atom_class_parsing():
+    for atom_class in ('C4', 'C{4,7}', 'C', 'J{3,4}'):
+        print list(types_and_valences_for_class(atom_class))
+
 if __name__ == '__main__':
+    if False:
+        test_atom_class_parsing()
+
     for test_pdb in TEST_PDBS:
         with open(test_pdb) as fh:
             molecule_graph = graph_from_pdb(fh.read())
