@@ -1,4 +1,5 @@
 from itertools import cycle, izip, product
+from os.path import exists
 
 try:
     from graph_tool.all import Graph, load_graph, graph_draw
@@ -129,6 +130,9 @@ def draw_graph(graph, fnme='graph'):
     if not '.png' in fnme:
         fnme += '.png'
 
+    if exists(fnme):
+        return
+
     graph_draw(
         graph,
         vertex_text=vertex_text,
@@ -137,42 +141,42 @@ def draw_graph(graph, fnme='graph'):
         output=fnme,
 )
 
-TEST_PDB = 'data/test.pdb'
+pattern_graphs = [pattern_graph_for_pattern(pattern) for (moiety, pattern) in PATTERNS.items()]
+interpreted_pattern_graphs = [(moiety, graphs_for_pattern_graph(pattern_graph)) for (moiety, pattern_graph) in zip(PATTERNS.keys(), pattern_graphs)]
+for (moiety, graph_list) in interpreted_pattern_graphs:
+    [
+        draw_graph(
+            graph,
+            fnme=(moiety.replace(' ', '_') + '_' + str(i)),
+        )
+        for (i, graph) in enumerate(graph_list)
+    ]
+
+def moieties_in_graph(super_graph):
+    for (moiety, graph_list) in interpreted_pattern_graphs:
+        print 'Testing moiety: {0}'.format(moiety)
+        for (i, pattern_graph) in enumerate(graph_list):
+            print '    Testing for pattern: {0}'.format(i)
+            results = topology.subgraph_isomorphism(
+                pattern_graph,
+                super_graph,
+                vertex_label=(
+                    pattern_graph.vertex_properties['type'],
+                    super_graph.vertex_properties['type'],
+                ),
+            )
+            print '    Results are: {0}'.format(results)
+
+TEST_PDB = 'data/ethanol.pdb'
 
 if __name__ == '__main__':
-    pattern_graphs = [pattern_graph_for_pattern(pattern) for (moiety, pattern) in PATTERNS.items()]
-    interpreted_pattern_graphs = [graphs_for_pattern_graph(pattern_graph) for pattern_graph in pattern_graphs]
-    for (moiety, graph_list) in zip(PATTERNS.keys(), interpreted_pattern_graphs):
-        [
-            draw_graph(
-                graph,
-                fnme=(moiety.replace(' ', '_') + '_' + str(i)),
-            )
-            for (i, graph) in enumerate(graph_list)
-        ]
-    exit()
-
     with open(TEST_PDB) as fh:
         molecule_graph = graph_from_pdb(fh.read())
 
     draw_graph(
         molecule_graph,
+        fnme=TEST_PDB.replace('.pdb', '.png')
     )
     molecule_graph.save(TEST_PDB.replace('.pdb', '.gt'))
-    exit()
 
-    graph_file, vertex_types = write_dummy_graph()
-    g = load_graph(graph_file)
-
-    g2 = Graph(g)
-
-
-    print topology.subgraph_isomorphism(
-        g,
-        g2,
-        vertex_label=(
-            g.vertex_properties['type'],
-            g2.vertex_properties['type'],
-        ),
-    )
-
+    moieties_in_graph(molecule_graph)
