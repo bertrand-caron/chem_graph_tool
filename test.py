@@ -107,7 +107,7 @@ def graph_from_pdb(pdb_str):
         if is_pdb_atom_line(line):
             fields = pdb_fields(line)
             v = g.add_vertex()
-            vertex_types[v] = fields[11]
+            vertex_types[v] = fields[11].strip().upper()
             vertices.append(v)
         elif is_pdb_connect_line(line):
             connect_ids = [int(str_id) for str_id in line.split()[1:]]
