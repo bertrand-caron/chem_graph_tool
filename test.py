@@ -1,4 +1,4 @@
-from itertools import cycle, izip
+from itertools import cycle, izip, product
 
 try:
     from graph_tool.all import Graph, load_graph, graph_draw
@@ -11,6 +11,72 @@ except:
 from atb_helpers.pdb import is_pdb_atom_line, is_pdb_connect_line, pdb_fields
 
 N = 10
+
+PATTERNS = {
+    'alcohol I': (
+        ('J', 'H', 'H', 'C', 'O', 'H'),
+        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5)),
+    ),
+    'alcohol II': (
+        ('C', 'C', 'H', 'C', 'O', 'H'),
+        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5)),
+    ),
+    'alcohol III': (
+        ('C', 'C', 'C', 'C', 'O', 'H'),
+        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5)),
+    ),
+}
+
+ATOM_CLASSES = {
+    'J': ('C', 'H'),
+}
+
+def atoms_for_class(atom_class):
+    if atom_class in ATOM_CLASSES:
+        return ATOM_CLASSES[atom_class]
+    else:
+        return (atom_class,)
+
+def atom_classes(types):
+    return sum([1 for a_type in types if a_type in ATOM_CLASSES.keys()])
+
+def pattern_graph_for_pattern(pattern):
+    vertices_types, edges = pattern
+
+    graph = Graph(directed=False)
+
+    vertex_types = graph.new_vertex_property("string")
+    graph.vertex_properties['type'] = vertex_types
+
+    vertices = []
+
+    for (i, vertex_type) in enumerate(vertices_types):
+        v = graph.add_vertex()
+        vertex_types[v] = vertex_type
+        vertices.append(v)
+
+    for (i, j) in edges:
+        graph.add_edge(vertices[i], vertices[j])
+
+    draw_graph(
+        graph,
+    )
+
+    return graph
+
+def graphs_for_pattern_graph(pattern_graph):
+    get_vertex_type = lambda v: pattern_graph.vp.type[v]
+
+    type_permutations = product(*[atoms_for_class(get_vertex_type(v)) for v in pattern_graph.vertices()])
+
+    graphs = []
+    for type_permutation in type_permutations:
+        new_graph = Graph(pattern_graph)
+        for (v, vertex_type) in zip(new_graph.vertices(), type_permutation):
+            new_graph.vp.type[v] = vertex_type
+
+        graphs.append(new_graph)
+    return graphs
 
 def write_dummy_graph(n=N, cyclic=True):
     graph_file = 'my_graph.gt'
@@ -53,24 +119,44 @@ def graph_from_pdb(pdb_str):
 
     return g
 
-def draw_graph(graph, vertex_text=None):
+def draw_graph(graph, fnme='graph'):
+    try:
+        vertex_text=graph.vertex_properties['type']
+    except:
+        vertex_text=graph.vertex_index
+
+
+    if not '.png' in fnme:
+        fnme += '.png'
+
     graph_draw(
         graph,
-        vertex_text=(graph.vertex_index if vertex_text is None else vertex_text),
+        vertex_text=vertex_text,
         vertex_font_size=18,
         output_size=(200, 200),
-        output="graph.png",
+        output=fnme,
 )
 
 TEST_PDB = 'data/test.pdb'
 
 if __name__ == '__main__':
+    pattern_graphs = [pattern_graph_for_pattern(pattern) for (moiety, pattern) in PATTERNS.items()]
+    interpreted_pattern_graphs = [graphs_for_pattern_graph(pattern_graph) for pattern_graph in pattern_graphs]
+    for (moiety, graph_list) in zip(PATTERNS.keys(), interpreted_pattern_graphs):
+        [
+            draw_graph(
+                graph,
+                fnme=(moiety.replace(' ', '_') + '_' + str(i)),
+            )
+            for (i, graph) in enumerate(graph_list)
+        ]
+    exit()
+
     with open(TEST_PDB) as fh:
         molecule_graph = graph_from_pdb(fh.read())
 
     draw_graph(
         molecule_graph,
-        vertex_text=molecule_graph.vertex_properties['type'],
     )
     molecule_graph.save(TEST_PDB.replace('.pdb', '.gt'))
     exit()
