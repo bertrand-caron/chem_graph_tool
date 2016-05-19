@@ -1,5 +1,5 @@
 from itertools import cycle, izip, product
-from os.path import exists
+from os.path import exists, join
 
 try:
     from graph_tool.all import Graph, load_graph, graph_draw
@@ -34,6 +34,7 @@ PATTERNS = {
 
 ATOM_CLASSES = {
     'J': ('C', 'H'),
+    'X': ('F', 'BR', 'CL', 'I'),
 }
 
 def atoms_for_class(atom_class):
@@ -151,7 +152,7 @@ for (moiety, graph_list) in interpreted_pattern_graphs:
     [
         draw_graph(
             graph,
-            fnme=(moiety.replace(' ', '_') + '_' + str(i)),
+            fnme=join('patterns', moiety.replace(' ', '_') + '_' + str(i)),
         )
         for (i, graph) in enumerate(graph_list)
     ]
