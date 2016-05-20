@@ -16,43 +16,92 @@ DRAW_PATTERN_GRAPHS = True
 
 DISABLE_PATTERNS = False
 
-A = ALKYL = 'C4|H1'
+R = ALKYL = 'C4|H1'
+H = 'H'
+
+PHENYL_CORE = (
+    ('C3', 'C3', 'C3', 'C3', 'C3', 'C3',),
+    ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0),)
+)
+
+MONO_HALOGENO = lambda X: {
+        (R, X, R, R, R,),
+        ((0, 1), (0, 2), (0, 3), (0, 4),),
+    }
+
+DI_HALOGENO = lambda X: {
+        (R, X, X, R, R,),
+        ((0, 1), (0, 2), (0, 3), (0, 4),),
+    }
+
+TRI_HALOGENO = lambda X: {
+        (R, X, X, X, R,),
+        ((0, 1), (0, 2), (0, 3), (0, 4),),
+    }
 
 PATTERNS = ({
     'alkane': (
-        (A, A, A, 'C4', 'C4', A, A, A,),
+        ('J', R, R, 'C4', 'C4', H, H, H,),
         ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5), (4, 6), (4, 7),),
     ),
     'alkene': (
-        (A, A, 'C3', 'C3', A, A,),
+        ('J', R, 'C3', 'C3', R, R,),
         ((0, 2), (1, 2), (2, 3), (3, 4), (3, 5),),
     ),
     'alkyne': (
-        (A, 'C2', 'C2', A,),
+        (R, 'C2', 'C2', R,),
         ((0, 1), (1, 2), (2, 3),),
     ),
     'alcohol I': (
-        ('J', 'H', 'H', 'C4', 'O2', 'H',),
+        ('J', H, H, 'C4', 'O2', H,),
         ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
     ),
     'alcohol II': (
-        ('C', 'C', 'H', 'C4', 'O2', 'H',),
+        ('C', 'C', H, 'C4', 'O2', H,),
         ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
     ),
     'alcohol III': (
-        ('C', 'C', 'C', 'C4', 'O2', 'H',),
+        ('C', 'C', 'C', 'C4', 'O2', H,),
         ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
     ),
     'thiol': (
-        ('C4', 'S2', 'H',),
+        ('C4', 'S2', H,),
         ((0, 1), (1, 2),),
     ),
     'thioether': (
         ('C4', 'S2', 'C4',),
         ((0, 1), (1, 2),),
     ),
-    'benzene': (
-        ('C3', 'C3', 'C3', 'C3', 'C3', 'C3',),
+    'phenyl': (
+        PHENYL_CORE[0] + (R, R, R, R, R, 'H1|C3|C4',),
+        PHENYL_CORE[1] + ((0, 6), (1, 7), (2, 8), (3, 9), (4, 10), (5, 11)),
+    ),
+    'phenol': (
+        PHENYL_CORE[0] + ('O2', H),
+        PHENYL_CORE[1] + ((5, 6), (6, 7),)
+    ),
+    'aniline': (
+        PHENYL_CORE[0] + ('N3', H, H),
+        PHENYL_CORE[1] + ((5, 6), (6, 7), (6, 8),)
+    ),
+    'fluorophenyl': (
+        PHENYL_CORE[0] + ('F',),
+        PHENYL_CORE[1] + ((5, 6),),
+    ),
+    'chlorophenyl': (
+        PHENYL_CORE[0] + ('CL',),
+        PHENYL_CORE[1] + ((5, 6),),
+    ),
+    'bromophenyl': (
+        PHENYL_CORE[0] + ('BR',),
+        PHENYL_CORE[1] + ((5, 6),),
+    ),
+    'iodophenyl': (
+        PHENYL_CORE[0] + ('I',),
+        PHENYL_CORE[1] + ((5, 6),),
+    ),
+    'pyridine': (
+        ('N2', 'C3', 'C3', 'C3', 'C3', 'C3',),
         ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0),)
     ),
     'cyclohexane': (
@@ -60,25 +109,73 @@ PATTERNS = ({
         ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0),),
     ),
     'amine I': (
-        ('J{3,4}', 'N3', 'H', 'H'),
+        (R, 'N3', H, H,),
         ((0,1), (1, 2), (1, 3),),
     ),
     'amine II': (
-        ('C{3,4}', 'N3', 'C{3,4}', 'H'),
+        ('C4', 'N3', 'C4', H,),
         ((0,1), (1, 2), (1, 3),),
     ),
     'amine III': (
-        ('C{3,4}', 'N3', 'C{3,4}', 'C{3,4}'),
+        ('C4', 'N3', 'C4', 'C4'),
         ((0,1), (1, 2), (1, 3),),
     ),
     'ester': (
-        (A, 'C3', 'O1', 'O2', A),
+        (R, 'C3', 'O1', 'O2', 'C4',),
         ((0, 1), (1, 2), (1, 3), (3, 4),),
+    ),
+    'carboxylic acid': (
+        (R, 'C3', 'O1', 'O2', H,),
+        ((0, 1), (1, 2), (1, 3), (3, 4),),
+    ),
+    'carboxylate': (
+        (R, 'C3', 'O1', 'O1',),
+        ((0, 1), (1, 2), (1, 3),),
     ),
     'ether': (
         ('C4', 'O2', 'C4',),
         ((0, 1), (1, 2),),
     ),
+    'amide': (
+        (R, 'C3', 'O1', 'N3', R, R),
+        ((0, 1), (1, 2), (1, 3), (3, 4), (3, 5),),
+    ),
+    'hemiketal': (
+        (R, R, 'C4', 'O2', H, 'O2', R),
+        ((0, 2), (1, 2), (2, 3), (3, 4), (2, 5), (5, 6)),
+    ),
+    'ketone': (
+        ('C{3,4}', 'C3', 'O1', 'C{3,4}',),
+        ((0, 1), (1, 2), (1, 3),),
+    ),
+    'aldehyde': (
+        (H, 'C3', 'O1', 'C{3,4}',),
+        ((0, 1), (1, 2), (1, 3),),
+    ),
+    'nitrile': {
+        (R, 'C2', 'N1',),
+        ((0, 1), (1, 2),),
+    },
+    'nitro': {
+        (R, 'N3', 'O1', 'O1',),
+        ((0, 1), (1, 2), (1, 3),),
+    },
+    'nitrophenyl': {
+        PHENYL_CORE[0] + ('N3', 'O1', 'O1',),
+        PHENYL_CORE[1] + ((5, 6), (6, 7), (6, 8)),
+    },
+    'monochloro': MONO_HALOGENO('CL'),
+    'dichloro': DI_HALOGENO('CL'),
+    'trichloro': TRI_HALOGENO('CL'),
+    'monofluoro': MONO_HALOGENO('F'),
+    'difluoro': DI_HALOGENO('F'),
+    'trifluoro': TRI_HALOGENO('F'),
+    'monobromo': MONO_HALOGENO('BR'),
+    'dibromo': DI_HALOGENO('BR'),
+    'tribromo': TRI_HALOGENO('BR'),
+    'monoiodo': MONO_HALOGENO('I'),
+    'diiodo': DI_HALOGENO('I'),
+    'triiodo': TRI_HALOGENO('I'),
 } if not DISABLE_PATTERNS else {})
 
 MONOVALENT = (1,)
@@ -192,7 +289,7 @@ def pattern_graph_for_pattern(pattern):
 
     return graph
 
-MAX_NUMBER_PERMUTATIONS = 75
+MAX_NUMBER_PERMUTATIONS = 100
 
 def graphs_for_pattern_graph(pattern_graph, pattern_identifier=''):
     get_vertex_type = lambda v: pattern_graph.vp.type[v]
@@ -349,6 +446,7 @@ def test_atom_class_parsing():
         ('C3', ['C3',]),
         ('C{4,5}', ['C4', 'C5',]),
         ('C4|H1', ['C4', 'H1',]),
+        ('CL{4,5}', ['CL4', 'CL5']),
     )
 
     for test_class, test_result in TEST_DATA:
@@ -372,7 +470,7 @@ def moieties_in_pdb_file(pdb_file, should_draw_graph=True, should_dump_graph=Fal
     return moieties_in_graph(molecule_graph)
 
 if __name__ == '__main__':
-    if False:
+    if True:
         test_atom_class_parsing()
 
     for test_pdb in TEST_PDBS:
