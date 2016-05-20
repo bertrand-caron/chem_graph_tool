@@ -1,3 +1,3 @@
 test: test.py
-	@- rm pattern/*.png
+	@- rm patterns/*.png
 	python test.py
