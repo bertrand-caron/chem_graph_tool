@@ -176,6 +176,10 @@ PATTERNS = ({
     'monoiodo': MONO_HALOGENO('I'),
     'diiodo': DI_HALOGENO('I'),
     'triiodo': TRI_HALOGENO('I'),
+    'cynao': {
+        (R, 'C2', 'N1',),
+        ((0, 1), (1, 2),),
+    },
 } if not DISABLE_PATTERNS else {})
 
 MONOVALENT = (1,)
