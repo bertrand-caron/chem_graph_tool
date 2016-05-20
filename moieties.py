@@ -15,6 +15,10 @@ from atb_helpers.pdb import is_pdb_atom_line, is_pdb_connect_line, pdb_fields
 DRAW_PATTERN_GRAPHS = True
 
 PATTERNS = {
+#    'alkene': (
+#        ('J', 'J', 'C4', 'C4', 'J', 'J',),
+#        ((0, 2), (1, 2), (2, 3), (3, 4), (3, 5),),
+#    ),
     'alcohol I': (
         ('J', 'H', 'H', 'C4', 'O2', 'H',),
         ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
@@ -70,6 +74,12 @@ ATOM_CLASSES = {
     'X': ('F', 'BR', 'CL', 'I',),
 }
 
+def type_identifier_for(atom_type, valence):
+    return '{0}{1}'.format(
+        atom_type,
+        valence,
+    )
+
 # Construct DEFAULT_VALENCES of atom_classes automatically
 for (atom_class_name, atom_class_atoms) in ATOM_CLASSES.items():
     DEFAULT_VALENCES[atom_class_name] = tuple(
@@ -114,7 +124,7 @@ def valences_for_class(atom_class):
 
 def types_and_valences_for_class(atom_class):
     return map(
-        lambda (atom_class, valence): '{0}{1}'.format(atom_class, valence),
+        lambda (atom_class, valence): type_identifier_for(atom_class, valence),
         product(
             atoms_for_class(atom_class),
             valences_for_class(atom_class),
@@ -144,10 +154,17 @@ def pattern_graph_for_pattern(pattern):
 
     return graph
 
-def graphs_for_pattern_graph(pattern_graph):
+MAX_NUMBER_PERMUTATIONS = 50
+
+def graphs_for_pattern_graph(pattern_graph, pattern_identifier=''):
     get_vertex_type = lambda v: pattern_graph.vp.type[v]
 
-    type_permutations = product(*[types_and_valences_for_class(get_vertex_type(v)) for v in pattern_graph.vertices()])
+    type_permutations = list(product(*[types_and_valences_for_class(get_vertex_type(v)) for v in pattern_graph.vertices()]))
+
+    assert len(type_permutations) <= MAX_NUMBER_PERMUTATIONS, '''Error: Unreasonably large number ({0}) of graphs for pattern identifier '{1}'. Aborting ...'''.format(
+        len(type_permutations),
+        pattern_identifier,
+    )
 
     graphs = []
     for type_permutation in type_permutations:
@@ -218,7 +235,7 @@ def graph_from_pdb(pdb_str):
     for (atom_id, line) in enumerate(atom_lines):
         fields = pdb_fields(line)
         v = g.add_vertex()
-        vertex_types[v] = '{0}{1}'.format(
+        vertex_types[v] = type_identifier_for(
             fields[11].strip().upper(),
             get_valence(atom_id),
         )
@@ -251,7 +268,7 @@ def draw_graph(graph, fnme='graph'):
 )
 
 pattern_graphs = [pattern_graph_for_pattern(pattern) for (moiety, pattern) in PATTERNS.items()]
-interpreted_pattern_graphs = [(moiety, graphs_for_pattern_graph(pattern_graph)) for (moiety, pattern_graph) in zip(PATTERNS.keys(), pattern_graphs)]
+interpreted_pattern_graphs = [(moiety, graphs_for_pattern_graph(pattern_graph, pattern_identifier=moiety)) for (moiety, pattern_graph) in zip(PATTERNS.keys(), pattern_graphs)]
 
 if DRAW_PATTERN_GRAPHS:
     for (moiety, graph_list) in interpreted_pattern_graphs:
@@ -273,6 +290,7 @@ def moieties_in_graph(super_graph):
                     pattern_graph.vertex_properties['type'],
                     super_graph.vertex_properties['type'],
                 ),
+                generator=False,
             )
         for (i, pattern_graph) in enumerate(graph_list)
         ])
