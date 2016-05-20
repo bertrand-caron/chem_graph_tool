@@ -249,7 +249,7 @@ def types_and_valences_for_class(atom_class):
                 [
                     list(
                         product(
-                            atom,
+                            (atom, ),
                             valences_for_class(
                                 sub(
                                     '^[A-Z]+',
@@ -446,6 +446,7 @@ def test_atom_class_parsing():
         ('C3', ['C3',]),
         ('C{4,5}', ['C4', 'C5',]),
         ('C4|H1', ['C4', 'H1',]),
+        ('CL', ['CL1']),
         ('CL{4,5}', ['CL4', 'CL5']),
     )
 
