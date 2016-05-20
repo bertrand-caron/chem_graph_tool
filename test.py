@@ -170,20 +170,50 @@ def graph_from_pdb(pdb_str):
 
     vertices = []
 
-    for line in pdb_str.splitlines():
-        if is_pdb_atom_line(line):
-            fields = pdb_fields(line)
-            v = g.add_vertex()
-            vertex_types[v] = fields[11].strip().upper()
-            vertices.append(v)
-        elif is_pdb_connect_line(line):
-            connect_ids = [int(str_id) for str_id in line.split()[1:]]
-            for (i, j) in map(lambda (i, j): (i - 1, j - 1), izip(cycle(connect_ids[0:1]), connect_ids[1:])):
-                if i > j:
-                    continue
-                g.add_edge(vertices[i], vertices[j])
-        else:
-            pass
+    def get_connect_list():
+        connect_ids_list = [
+            [int(str_id) for str_id in line.split()[1:]]
+            for line in pdb_str.splitlines()
+            if is_pdb_connect_line(line)
+        ]
+
+        return reduce(
+            lambda acc, e: acc + e,
+            [
+                [
+                    (i, j)
+                    for (i, j) in map(
+                        lambda (i, j): (i - 1, j - 1),
+                        izip(cycle(connect_ids[0:1]), connect_ids[1:]),
+                    )
+                    if i < j
+                ]
+                for connect_ids in connect_ids_list
+            ],
+            [],
+        )
+
+    connects = get_connect_list()
+
+    def get_valence(atom_id):
+        return sum([1 for connect in connects if atom_id in connect])
+
+    atom_lines = [
+        line for line in pdb_str.splitlines()
+        if is_pdb_atom_line(line)
+    ]
+
+    for (atom_id, line) in enumerate(atom_lines):
+        fields = pdb_fields(line)
+        v = g.add_vertex()
+        vertex_types[v] = '{0}{1}'.format(
+            fields[11].strip().upper(),
+            get_valence(atom_id),
+        )
+        vertices.append(v)
+
+    for (i, j) in connects:
+        g.add_edge(vertices[i], vertices[j])
 
     return g
 
