@@ -50,16 +50,19 @@ PATTERNS = {
 }
 
 MONOVALENT = (1,)
+HALOGEN = MONOVALENT
+CHALCOGEN = (1, 2, 3),
 
 DEFAULT_VALENCES = {
     'H': MONOVALENT,
-    'F': MONOVALENT,
-    'BR': MONOVALENT,
-    'CL': MONOVALENT,
-    'I': MONOVALENT,
+    'F': HALOGEN,
+    'BR': HALOGEN,
+    'CL': HALOGEN,
+    'I': HALOGEN,
     'C': (2, 3, 4,),
-    'O': (1, 2,),
+    'O': CHALCOGEN,
     'N': (1, 2, 3, 4,),
+    'S': CHALCOGEN,
 }
 
 ATOM_CLASSES = {
