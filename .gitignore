@@ -1,3 +1,4 @@
 *.gt
 *.xml
 *.png
+.DS_Store
