@@ -291,19 +291,25 @@ def test_atom_class_parsing():
     for atom_class in ('C4', 'C{4,7}', 'C', 'J{3,4}'):
         print list(types_and_valences_for_class(atom_class))
 
+def moieties_in_pdb_file(pdb_file, should_draw_graph=True, should_dump_graph=False):
+    with open(pdb_file) as fh:
+        molecule_graph = graph_from_pdb(fh.read())
+
+    if should_draw_graph:
+        draw_graph(
+            molecule_graph,
+            fnme=pdb_file.replace('.pdb', '.png')
+        )
+
+    if should_dump_graph:
+        molecule_graph.save(pdb_file.replace('.pdb', '.gt'))
+
+    return moieties_in_graph(molecule_graph)
+
 if __name__ == '__main__':
     if False:
         test_atom_class_parsing()
 
     for test_pdb in TEST_PDBS:
-        with open(test_pdb) as fh:
-            molecule_graph = graph_from_pdb(fh.read())
-
-        draw_graph(
-            molecule_graph,
-            fnme=test_pdb.replace('.pdb', '.png')
-        )
-        molecule_graph.save(test_pdb.replace('.pdb', '.gt'))
-
         print test_pdb
-        print moieties_in_graph(molecule_graph)
+        print moieties_in_pdb_file(test_pdb)
