@@ -1,6 +1,6 @@
 from itertools import cycle, izip, product
 from os.path import exists, join
-from re import search
+from re import search, sub
 
 try:
     from graph_tool.all import Graph, load_graph, graph_draw
@@ -14,11 +14,17 @@ from atb_helpers.pdb import is_pdb_atom_line, is_pdb_connect_line, pdb_fields
 
 DRAW_PATTERN_GRAPHS = True
 
-PATTERNS = {
+DISABLE_PATTERNS = False
+
+PATTERNS = ({
 #    'alkene': (
-#        ('J', 'J', 'C4', 'C4', 'J', 'J',),
+#        ('J', 'J', 'C3', 'C3', 'J', 'J',),
 #        ((0, 2), (1, 2), (2, 3), (3, 4), (3, 5),),
 #    ),
+    'alkyne': (
+        ('J', 'C2', 'C2', 'J',),
+        ((0, 1), (1, 2), (2, 3),),
+    ),
     'alcohol I': (
         ('J', 'H', 'H', 'C4', 'O2', 'H',),
         ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
@@ -51,7 +57,7 @@ PATTERNS = {
         ('C{3,4}', 'N3', 'C{3,4}', 'C{3,4}'),
         ((0,1), (1, 2), (1, 3),),
     ),
-}
+} if not DISABLE_PATTERNS else {})
 
 MONOVALENT = (1,)
 HALOGEN = MONOVALENT
@@ -80,54 +86,60 @@ def type_identifier_for(atom_type, valence):
         valence,
     )
 
-# Construct DEFAULT_VALENCES of atom_classes automatically
-for (atom_class_name, atom_class_atoms) in ATOM_CLASSES.items():
-    DEFAULT_VALENCES[atom_class_name] = tuple(
-        set(
-            reduce(
-                lambda acc, e: acc + e,
-                [DEFAULT_VALENCES[atom_type] for atom_type in atom_class_atoms],
-                (),
-            )
-        )
-    )
-
 def parse_atom_class(atom_class):
     m =  search('^([A-Z]+){?([0-9]?),?([0-9]?)}?', atom_class)
     assert m
     return m
 
-def atoms_for_class(atom_class):
-    m = parse_atom_class(atom_class)
-
-    type_class = m.group(1)
-
-    if type_class in ATOM_CLASSES:
-        return ATOM_CLASSES[type_class]
-    else:
-        return (type_class,)
-
-def valences_for_class(atom_class):
-    m = parse_atom_class(atom_class)
-
-    if not m.group(2) or not m.group(3):
-        start = [int(group) for group in (m.group(2), m.group(3)) if group]
-        if len(start) == 0:
-            return DEFAULT_VALENCES[atom_class]
-        else:
-            start = start[0]
-        end = start + 1
-    else:
-        start, end = int(m.group(2)), int(m.group(3)) + 1
-
-    return tuple(range(start, end))
-
 def types_and_valences_for_class(atom_class):
+    def atoms_for_class(atom_class):
+        m = parse_atom_class(atom_class)
+
+        type_class = m.group(1)
+
+        if type_class in ATOM_CLASSES:
+            return ATOM_CLASSES[type_class]
+        else:
+            return (type_class,)
+
+    def valences_for_class(atom_class):
+        m = parse_atom_class(atom_class)
+
+        if not m.group(2) or not m.group(3):
+            start = [int(group) for group in (m.group(2), m.group(3)) if group]
+            if len(start) == 0:
+                if atom_class in DEFAULT_VALENCES:
+                    return DEFAULT_VALENCES[atom_class]
+                else:
+                    raise Exception(atom_class)
+            else:
+                start = start[0]
+            end = start + 1
+        else:
+            start, end = int(m.group(2)), int(m.group(3)) + 1
+
+        return tuple(range(start, end))
+
     return map(
         lambda (atom_class, valence): type_identifier_for(atom_class, valence),
-        product(
-            atoms_for_class(atom_class),
-            valences_for_class(atom_class),
+         reduce(
+            lambda acc, e: acc + e,
+            [
+                list(
+                    product(
+                        atom,
+                        valences_for_class(
+                            sub(
+                                '^[A-Z]+',
+                                atom,
+                                atom_class,
+                            ),
+                        ),
+                    ),
+                )
+                for atom in atoms_for_class(atom_class)
+            ],
+            [],
         ),
     )
 
@@ -306,8 +318,16 @@ from glob import glob
 TEST_PDBS = glob('data/*.pdb')
 
 def test_atom_class_parsing():
-    for atom_class in ('C4', 'C{4,7}', 'C', 'J{3,4}'):
-        print list(types_and_valences_for_class(atom_class))
+    TEST_DATA = (
+        ('C', ['C2', 'C3', 'C4',]),
+        ('C3', ['C3',]),
+        ('C{4,5}', ['C4', 'C5',]),
+    )
+
+    for test_class, test_result in TEST_DATA:
+        r = list(types_and_valences_for_class(test_class))
+        assert r == test_result, 'Error: pattern "{2}": {0} != {1}'.format(r, test_result, test_class)
+    exit()
 
 def moieties_in_pdb_file(pdb_file, should_draw_graph=True, should_dump_graph=False):
     with open(pdb_file) as fh:
