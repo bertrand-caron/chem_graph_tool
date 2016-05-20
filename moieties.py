@@ -142,10 +142,6 @@ def pattern_graph_for_pattern(pattern):
     for (i, j) in edges:
         graph.add_edge(vertices[i], vertices[j])
 
-    draw_graph(
-        graph,
-    )
-
     return graph
 
 def graphs_for_pattern_graph(pattern_graph):
@@ -163,7 +159,7 @@ def graphs_for_pattern_graph(pattern_graph):
     return graphs
 
 def write_dummy_graph(n=10, cyclic=True):
-    graph_file = 'my_graph.gt'
+    graph_file = 'data/dummy.gt'
 
     g = Graph(directed=False)
     vertices = [g.add_vertex() for n in range(0, N)]

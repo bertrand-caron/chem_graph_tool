@@ -1,3 +1,3 @@
-test: test.py
+test: moieties.py
 	@- rm patterns/*.png
-	python test.py
+	python $<
