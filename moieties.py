@@ -17,12 +17,16 @@ DRAW_PATTERN_GRAPHS = True
 DISABLE_PATTERNS = False
 
 PATTERNS = ({
-#    'alkene': (
-#        ('J', 'J', 'C3', 'C3', 'J', 'J',),
-#        ((0, 2), (1, 2), (2, 3), (3, 4), (3, 5),),
-#    ),
+    'alkane': (
+        ('C4|H1', 'C4|H1', 'C4|H1', 'C4', 'C4', 'C4|H1', 'C4|H1', 'C4|H1',),
+        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5), (4, 6), (4, 7),),
+    ),
+    'alkene': (
+        ('C4|H1', 'C4|H1', 'C3', 'C3', 'C4|H1', 'C4|H1',),
+        ((0, 2), (1, 2), (2, 3), (3, 4), (3, 5),),
+    ),
     'alkyne': (
-        ('J', 'C2', 'C2', 'J',),
+        ('C4|H1', 'C2', 'C2', 'C4|H1',),
         ((0, 1), (1, 2), (2, 3),),
     ),
     'alcohol I': (
@@ -128,28 +132,32 @@ def types_and_valences_for_class(atom_class):
 
         return tuple(range(start, end))
 
-    return map(
-        lambda (atom_class, valence): type_identifier_for(atom_class, valence),
-         reduce(
-            lambda acc, e: acc + e,
-            [
-                list(
-                    product(
-                        atom,
-                        valences_for_class(
-                            sub(
-                                '^[A-Z]+',
-                                atom,
-                                atom_class,
+    if '|' in atom_class:
+        type_valence_list = atom_class.split('|')
+    else:
+        type_valence_list = map(
+            lambda (atom_class, valence): type_identifier_for(atom_class, valence),
+             reduce(
+                lambda acc, e: acc + e,
+                [
+                    list(
+                        product(
+                            atom,
+                            valences_for_class(
+                                sub(
+                                    '^[A-Z]+',
+                                    atom,
+                                    atom_class,
+                                ),
                             ),
                         ),
-                    ),
-                )
-                for atom in atoms_for_class(atom_class)
-            ],
-            [],
-        ),
-    )
+                    )
+                    for atom in atoms_for_class(atom_class)
+                ],
+                [],
+            ),
+        )
+    return type_valence_list
 
 def atom_classes(types):
     return sum([1 for a_type in types if a_type in ATOM_CLASSES.keys()])
@@ -174,7 +182,7 @@ def pattern_graph_for_pattern(pattern):
 
     return graph
 
-MAX_NUMBER_PERMUTATIONS = 50
+MAX_NUMBER_PERMUTATIONS = 75
 
 def graphs_for_pattern_graph(pattern_graph, pattern_identifier=''):
     get_vertex_type = lambda v: pattern_graph.vp.type[v]
@@ -330,6 +338,7 @@ def test_atom_class_parsing():
         ('C', ['C2', 'C3', 'C4',]),
         ('C3', ['C3',]),
         ('C{4,5}', ['C4', 'C5',]),
+        ('C4|H1', ['C4', 'H1',]),
     )
 
     for test_class, test_result in TEST_DATA:
