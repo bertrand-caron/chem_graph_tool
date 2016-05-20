@@ -12,7 +12,7 @@ except:
 
 from atb_helpers.pdb import is_pdb_atom_line, is_pdb_connect_line, pdb_fields
 
-N = 10
+DRAW_PATTERN_GRAPHS = True
 
 PATTERNS = {
     'alcohol I': (
@@ -162,7 +162,7 @@ def graphs_for_pattern_graph(pattern_graph):
         graphs.append(new_graph)
     return graphs
 
-def write_dummy_graph(n=N, cyclic=True):
+def write_dummy_graph(n=10, cyclic=True):
     graph_file = 'my_graph.gt'
 
     g = Graph(directed=False)
@@ -256,14 +256,16 @@ def draw_graph(graph, fnme='graph'):
 
 pattern_graphs = [pattern_graph_for_pattern(pattern) for (moiety, pattern) in PATTERNS.items()]
 interpreted_pattern_graphs = [(moiety, graphs_for_pattern_graph(pattern_graph)) for (moiety, pattern_graph) in zip(PATTERNS.keys(), pattern_graphs)]
-for (moiety, graph_list) in interpreted_pattern_graphs:
-    [
-        draw_graph(
-            graph,
-            fnme=join('patterns', moiety.replace(' ', '_') + '_' + str(i)),
-        )
-        for (i, graph) in enumerate(graph_list)
-    ]
+
+if DRAW_PATTERN_GRAPHS:
+    for (moiety, graph_list) in interpreted_pattern_graphs:
+        [
+            draw_graph(
+                graph,
+                fnme=join('patterns', moiety.replace(' ', '_') + '_' + str(i)),
+            )
+            for (i, graph) in enumerate(graph_list)
+        ]
 
 def moieties_in_graph(super_graph):
     def match(moiety, graph_list):
