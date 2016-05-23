@@ -17,6 +17,7 @@ DRAW_PATTERN_GRAPHS = True
 DISABLE_PATTERNS = False
 
 R = ALKYL = 'C4|H1'
+R2 = R + '|C3'
 H = 'H'
 
 PHENYL_CORE = (
@@ -24,20 +25,25 @@ PHENYL_CORE = (
     ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0),)
 )
 
-MONO_HALOGENO = lambda X: {
-        (R, X, R, R, R,),
+MONO_HALOGENO = lambda X: (
+        ('C4', X, R, R, R2),
         ((0, 1), (0, 2), (0, 3), (0, 4),),
-    }
+    )
 
-DI_HALOGENO = lambda X: {
-        (R, X, X, R, R,),
+DI_HALOGENO = lambda X: (
+        ('C4', X, X, R, R2,),
         ((0, 1), (0, 2), (0, 3), (0, 4),),
-    }
+    )
 
-TRI_HALOGENO = lambda X: {
-        (R, X, X, X, R,),
+TRI_HALOGENO = lambda X: (
+        ('C4', X, X, X, R2,),
         ((0, 1), (0, 2), (0, 3), (0, 4),),
-    }
+    )
+
+TETRA_HALOGENO = lambda X: (
+        ('C4', X, X, X, X,),
+        ((0, 1), (0, 2), (0, 3), (0, 4),),
+    )
 
 PATTERNS = ({
     'alkane': (
@@ -65,12 +71,16 @@ PATTERNS = ({
         ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
     ),
     'thiol': (
-        ('C4', 'S2', H,),
+        (R, 'S2', H,),
         ((0, 1), (1, 2),),
     ),
     'thioether': (
         ('C4', 'S2', 'C4',),
         ((0, 1), (1, 2),),
+    ),
+    'disulfide': (
+        (R, 'S2', 'S2', R,),
+        ((0, 1), (1, 2), (2, 3),),
     ),
     'phenyl': (
         PHENYL_CORE[0] + (R, R, R, R, R, 'H1|C3|C4',),
@@ -117,19 +127,19 @@ PATTERNS = ({
         ((0,1), (1, 2), (1, 3),),
     ),
     'amine III': (
-        ('C4', 'N3', 'C4', 'C4'),
+        ('C{3,4}', 'N3', 'C4', 'C4'),
         ((0,1), (1, 2), (1, 3),),
     ),
     'ester': (
-        (R, 'C3', 'O1', 'O2', 'C4',),
+        (R2, 'C3', 'O1', 'O2', 'C{3,4}',),
         ((0, 1), (1, 2), (1, 3), (3, 4),),
     ),
     'carboxylic acid': (
-        (R, 'C3', 'O1', 'O2', H,),
+        (R2, 'C3', 'O1', 'O2', H,),
         ((0, 1), (1, 2), (1, 3), (3, 4),),
     ),
     'carboxylate': (
-        (R, 'C3', 'O1', 'O1',),
+        (R2, 'C3', 'O1', 'O1',),
         ((0, 1), (1, 2), (1, 3),),
     ),
     'ether': (
@@ -137,7 +147,7 @@ PATTERNS = ({
         ((0, 1), (1, 2),),
     ),
     'amide': (
-        (R, 'C3', 'O1', 'N3', R, R),
+        (R2, 'C3', 'O1', 'N3', R, R),
         ((0, 1), (1, 2), (1, 3), (3, 4), (3, 5),),
     ),
     'hemiketal': (
@@ -152,34 +162,58 @@ PATTERNS = ({
         (H, 'C3', 'O1', 'C{3,4}',),
         ((0, 1), (1, 2), (1, 3),),
     ),
-    'nitrile': {
-        (R, 'C2', 'N1',),
+    'nitrile': (
+        (R2, 'C2', 'N1',),
         ((0, 1), (1, 2),),
-    },
-    'nitro': {
+    ),
+    'nitro': (
         (R, 'N3', 'O1', 'O1',),
         ((0, 1), (1, 2), (1, 3),),
-    },
-    'nitrophenyl': {
+    ),
+    'nitrophenyl': (
         PHENYL_CORE[0] + ('N3', 'O1', 'O1',),
         PHENYL_CORE[1] + ((5, 6), (6, 7), (6, 8)),
-    },
+    ),
     'monochloro': MONO_HALOGENO('CL'),
     'dichloro': DI_HALOGENO('CL'),
     'trichloro': TRI_HALOGENO('CL'),
+    'tetrachloro': TETRA_HALOGENO('CL'),
     'monofluoro': MONO_HALOGENO('F'),
     'difluoro': DI_HALOGENO('F'),
     'trifluoro': TRI_HALOGENO('F'),
+    'tetrafluoro': TETRA_HALOGENO('F'),
     'monobromo': MONO_HALOGENO('BR'),
     'dibromo': DI_HALOGENO('BR'),
     'tribromo': TRI_HALOGENO('BR'),
+    'tetrabromo': TETRA_HALOGENO('BR'),
     'monoiodo': MONO_HALOGENO('I'),
     'diiodo': DI_HALOGENO('I'),
     'triiodo': TRI_HALOGENO('I'),
-    'cynao': {
-        (R, 'C2', 'N1',),
-        ((0, 1), (1, 2),),
-    },
+    'tetraiodo': TETRA_HALOGENO('I'),
+    'sulfonyl': (
+        (R, 'S4', 'O1', 'O1', R,),
+        ((0, 1), (1, 2), (1, 3), (1, 4),),
+    ),
+    'sulfinyl': (
+        (R, 'S3', 'O1', R,),
+        ((0, 1), (1, 2), (1, 3),),
+    ),
+    'nitrate': (
+        (R, 'O2', 'N', 'O1', 'O1',),
+        ((0, 1), (1, 2), (2, 3), (2, 4),),
+    ),
+    'cyclopropane': (
+        ('C4', 'C4', 'C4'),
+        ((0, 1), (1, 2), (2, 0),),
+    ),
+    'cyclobutane': (
+        ('C4', 'C4', 'C4', 'C4'),
+        ((0, 1), (1, 2), (2, 3), (3, 0),),
+    ),
+    'urea': (
+        (R2, R2, 'N3', 'C3', 'O1', 'N3', R2, R2),
+        ((0, 2), (1, 2), (2, 3), (3, 4), (3, 5), (5, 6), (5, 7),),
+    ),
 } if not DISABLE_PATTERNS else {})
 
 MONOVALENT = (1,)
@@ -402,7 +436,7 @@ def draw_graph(graph, fnme='graph'):
         graph,
         vertex_text=vertex_text,
         vertex_font_size=18,
-        output_size=(200, 200),
+        output_size=(400, 400),
         output=fnme,
 )
 
