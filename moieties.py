@@ -1,16 +1,8 @@
-from itertools import cycle, izip, product
+from itertools import product
 from os.path import exists, join
 from re import search, sub
 
-try:
-    from graph_tool.all import Graph, load_graph, graph_draw
-    from graph_tool import topology
-except:
-    from sys import stderr
-    stderr.write('Please install graph-tool')
-    raise
-
-from atb_helpers.pdb import is_pdb_atom_line, is_pdb_connect_line, pdb_fields
+from py_graphs.pdb import Graph, load_graph, graph_draw, topology, graph_from_pdb, type_identifier_for
 
 DRAW_PATTERN_GRAPHS = True
 
@@ -245,12 +237,6 @@ ATOM_CLASSES = {
     'X': ('F', 'BR', 'CL', 'I',),
 }
 
-def type_identifier_for(atom_type, valence):
-    return '{0}{1}'.format(
-        atom_type,
-        valence,
-    )
-
 def parse_atom_class(atom_class):
     m =  search('^([A-Z]+){?([0-9]?),?([0-9]?)}?', atom_class)
     assert m
@@ -371,61 +357,6 @@ def write_dummy_graph(n=10, cyclic=True):
 
     g.save(graph_file)
     return (graph_file, vertex_types)
-
-def graph_from_pdb(pdb_str):
-    g = Graph(directed=False)
-
-    vertex_types = g.new_vertex_property("string")
-    g.vertex_properties['type'] = vertex_types
-
-    vertices = []
-
-    def get_connect_list():
-        connect_ids_list = [
-            [int(str_id) for str_id in line.split()[1:]]
-            for line in pdb_str.splitlines()
-            if is_pdb_connect_line(line)
-        ]
-
-        return reduce(
-            lambda acc, e: acc + e,
-            [
-                [
-                    (i, j)
-                    for (i, j) in map(
-                        lambda (i, j): (i - 1, j - 1),
-                        izip(cycle(connect_ids[0:1]), connect_ids[1:]),
-                    )
-                    if i < j
-                ]
-                for connect_ids in connect_ids_list
-            ],
-            [],
-        )
-
-    connects = get_connect_list()
-
-    def get_valence(atom_id):
-        return sum([1 for connect in connects if atom_id in connect])
-
-    atom_lines = [
-        line for line in pdb_str.splitlines()
-        if is_pdb_atom_line(line)
-    ]
-
-    for (atom_id, line) in enumerate(atom_lines):
-        fields = pdb_fields(line)
-        v = g.add_vertex()
-        vertex_types[v] = type_identifier_for(
-            fields[11].strip().upper(),
-            get_valence(atom_id),
-        )
-        vertices.append(v)
-
-    for (i, j) in connects:
-        g.add_edge(vertices[i], vertices[j])
-
-    return g
 
 def draw_graph(graph, fnme='graph'):
     try:
