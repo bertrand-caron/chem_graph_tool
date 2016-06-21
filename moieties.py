@@ -379,20 +379,23 @@ def draw_graph(graph, fnme='graph'):
         output=fnme,
 )
 
-pattern_graphs = [pattern_graph_for_pattern(pattern) for (moiety, pattern) in PATTERNS.items()]
-interpreted_pattern_graphs = [(moiety, graphs_for_pattern_graph(pattern_graph, pattern_identifier=moiety)) for (moiety, pattern_graph) in zip(PATTERNS.keys(), pattern_graphs)]
 
-if DRAW_PATTERN_GRAPHS:
-    for (moiety, graph_list) in interpreted_pattern_graphs:
-        [
-            draw_graph(
-                graph,
-                fnme=join('patterns', moiety.replace(' ', '_') + '_' + str(i)),
-            )
-            for (i, graph) in enumerate(graph_list)
-        ]
+def get_interpreted_pattern_graphs():
+    pattern_graphs = [pattern_graph_for_pattern(pattern) for (moiety, pattern) in PATTERNS.items()]
+    interpreted_pattern_graphs = [(moiety, graphs_for_pattern_graph(pattern_graph, pattern_identifier=moiety)) for (moiety, pattern_graph) in zip(PATTERNS.keys(), pattern_graphs)]
 
-def moieties_in_graph(super_graph):
+    if DRAW_PATTERN_GRAPHS:
+        for (moiety, graph_list) in interpreted_pattern_graphs:
+            [
+                draw_graph(
+                    graph,
+                    fnme=join('patterns', moiety.replace(' ', '_') + '_' + str(i)),
+                )
+                for (i, graph) in enumerate(graph_list)
+            ]
+    return interpreted_pattern_graphs
+
+def moieties_in_graph(super_graph, interpreted_pattern_graphs):
     def match(moiety, graph_list):
         return any([
             topology.subgraph_isomorphism(
@@ -432,7 +435,10 @@ def test_atom_class_parsing():
         assert r == test_result, 'Error: pattern "{2}": {0} != {1}'.format(r, test_result, test_class)
     exit()
 
-def moieties_in_pdb_file(pdb_file, should_draw_graph=True, should_dump_graph=False):
+def moieties_in_pdb_file(pdb_file, should_draw_graph=True, should_dump_graph=False, interpreted_pattern_graphs=None):
+    if interpreted_pattern_graphs is None:
+        interpreted_pattern_graphs = get_interpreted_pattern_graphs()
+
     with open(pdb_file) as fh:
         molecule_graph = graph_from_pdb(fh.read())
 
@@ -445,12 +451,14 @@ def moieties_in_pdb_file(pdb_file, should_draw_graph=True, should_dump_graph=Fal
     if should_dump_graph:
         molecule_graph.save(pdb_file.replace('.pdb', '.gt'))
 
-    return moieties_in_graph(molecule_graph)
+    return moieties_in_graph(molecule_graph, interpreted_pattern_graphs)
 
 if __name__ == '__main__':
+    interpreted_pattern_graphs = get_interpreted_pattern_graphs()
+
     if True:
         test_atom_class_parsing()
 
     for test_pdb in TEST_PDBS:
         print test_pdb
-        print moieties_in_pdb_file(test_pdb)
+        print moieties_in_pdb_file(test_pdb, interpreted_pattern_graphs=interpreted_pattern_graphs)
