@@ -2,13 +2,23 @@ from itertools import product
 from os.path import exists, join
 from re import search, sub
 from functools import reduce
-from typing import List
+from typing import List, Tuple, Any, Optional
 
 from py_graphs.pdb import Graph, load_graph, graph_draw, topology, graph_from_pdb, type_identifier_for
 
 DRAW_PATTERN_GRAPHS = True
 
 DISABLE_PATTERNS = False
+
+Bond = Tuple[int, int]
+
+Atom_Pattern = str
+
+Moiety = str
+
+Element = str
+
+Graph_Pattern = Tuple[List[Atom_Pattern], List[Bond]]
 
 def OR(*x: List[str]) -> str:
  return '|'.join(x)
@@ -19,162 +29,162 @@ R = ALKYL = OR(R_NO_H, H)
 R2 = OR(R, 'C3')
 
 PHENYL_CORE = (
-    ('C3', 'C3', 'C3', 'C3', 'C3', 'C3',),
-    ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0),)
+    ['C3', 'C3', 'C3', 'C3', 'C3', 'C3'],
+    [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0)],
 )
 
 MONO_HALOGENO = lambda X: (
-        ('C4', X, R, R, R2),
-        ((0, 1), (0, 2), (0, 3), (0, 4),),
+        ['C4', X, R, R, R2],
+        [(0, 1), (0, 2), (0, 3), (0, 4)],
     )
 
 DI_HALOGENO = lambda X: (
-        ('C4', X, X, R, R2,),
-        ((0, 1), (0, 2), (0, 3), (0, 4),),
+        ['C4', X, X, R, R2],
+        [(0, 1), (0, 2), (0, 3), (0, 4)],
     )
 
 TRI_HALOGENO = lambda X: (
-        ('C4', X, X, X, R2,),
-        ((0, 1), (0, 2), (0, 3), (0, 4),),
+        ['C4', X, X, X, R2],
+        [(0, 1), (0, 2), (0, 3), (0, 4)],
     )
 
 TETRA_HALOGENO = lambda X: (
-        ('C4', X, X, X, X,),
-        ((0, 1), (0, 2), (0, 3), (0, 4),),
+        ['C4', X, X, X, X],
+        [(0, 1), (0, 2), (0, 3), (0, 4)],
     )
 
 PATTERNS = ({
     'alkane': (
-        ('J', R, R, 'C4', 'C4', H, H, H,),
-        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5), (4, 6), (4, 7),),
+        ['J', R, R, 'C4', 'C4', H, H, H],
+        [(0, 3), (1, 3), (2, 3), (3, 4), (4, 5), (4, 6), (4, 7)],
     ),
     'alkene': (
-        ('J', R, 'C3', 'C3', R, R,),
-        ((0, 2), (1, 2), (2, 3), (3, 4), (3, 5),),
+        ['J', R, 'C3', 'C3', R, R],
+        [(0, 2), (1, 2), (2, 3), (3, 4), (3, 5)],
     ),
     'alkyne': (
-        (R, 'C2', 'C2', R,),
-        ((0, 1), (1, 2), (2, 3),),
+        [R, 'C2', 'C2', R],
+        [(0, 1), (1, 2), (2, 3)],
     ),
     'alcohol I': (
-        ('J', H, H, 'C4', 'O2', H,),
-        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
+        ['J', H, H, 'C4', 'O2', H],
+        [(0, 3), (1, 3), (2, 3), (3, 4), (4, 5)],
     ),
     'alcohol II': (
-        ('C', 'C', H, 'C4', 'O2', H,),
-        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
+        ['C', 'C', H, 'C4', 'O2', H],
+        [(0, 3), (1, 3), (2, 3), (3, 4), (4, 5)],
     ),
     'alcohol III': (
-        ('C', 'C', 'C', 'C4', 'O2', H,),
-        ((0, 3), (1, 3), (2, 3), (3, 4), (4, 5),),
+        ['C', 'C', 'C', 'C4', 'O2', H],
+        [(0, 3), (1, 3), (2, 3), (3, 4), (4, 5)],
     ),
     'thiol': (
-        (R, 'S2', H,),
-        ((0, 1), (1, 2),),
+        [R, 'S2', H],
+        [(0, 1), (1, 2)],
     ),
     'thioether': (
-        ('C4', 'S2', 'C4',),
-        ((0, 1), (1, 2),),
+        ['C4', 'S2', 'C4'],
+        [(0, 1), (1, 2)],
     ),
     'disulfide': (
-        (R, 'S2', 'S2', R,),
-        ((0, 1), (1, 2), (2, 3),),
+        [R, 'S2', 'S2', R],
+        [(0, 1), (1, 2), (2, 3)],
     ),
     'phenyl': (
-        PHENYL_CORE[0] + (R, R, R, R, R, 'H1|C3|C4',),
-        PHENYL_CORE[1] + ((0, 6), (1, 7), (2, 8), (3, 9), (4, 10), (5, 11)),
+        PHENYL_CORE[0] + [R, R, R, R, R, 'H1|C3|C4'],
+        PHENYL_CORE[1] + [(0, 6), (1, 7), (2, 8), (3, 9), (4, 10), (5, 11)],
     ),
     'phenol': (
-        PHENYL_CORE[0] + ('O2', H),
-        PHENYL_CORE[1] + ((5, 6), (6, 7),)
+        PHENYL_CORE[0] + ['O2', H],
+        PHENYL_CORE[1] + [(5, 6), (6, 7)],
     ),
     'phenoxy': (
-        PHENYL_CORE[0] + ('O2', R_NO_H),
-        PHENYL_CORE[1] + ((5, 6), (6, 7),)
+        PHENYL_CORE[0] + ['O2', R_NO_H],
+        PHENYL_CORE[1] + [(5, 6), (6, 7)],
     ),
     'aniline': (
-        PHENYL_CORE[0] + ('N3', H, H),
-        PHENYL_CORE[1] + ((5, 6), (6, 7), (6, 8),)
+        PHENYL_CORE[0] + ['N3', H, H],
+        PHENYL_CORE[1] + [(5, 6), (6, 7), (6, 8)],
     ),
     'fluorophenyl': (
-        PHENYL_CORE[0] + ('F',),
-        PHENYL_CORE[1] + ((5, 6),),
+        PHENYL_CORE[0] + ['F'],
+        PHENYL_CORE[1] + [(5, 6)],
     ),
     'chlorophenyl': (
-        PHENYL_CORE[0] + ('CL',),
-        PHENYL_CORE[1] + ((5, 6),),
+        PHENYL_CORE[0] + ['CL'],
+        PHENYL_CORE[1] + [(5, 6)],
     ),
     'bromophenyl': (
-        PHENYL_CORE[0] + ('BR',),
-        PHENYL_CORE[1] + ((5, 6),),
+        PHENYL_CORE[0] + ['BR'],
+        PHENYL_CORE[1] + [(5, 6)],
     ),
     'iodophenyl': (
-        PHENYL_CORE[0] + ('I',),
-        PHENYL_CORE[1] + ((5, 6),),
+        PHENYL_CORE[0] + ['I'],
+        PHENYL_CORE[1] + [(5, 6)],
     ),
     'pyridine': (
-        ('N2', 'C3', 'C3', 'C3', 'C3', 'C3',),
-        ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0),)
+        ['N2', 'C3', 'C3', 'C3', 'C3', 'C3'],
+        [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0)],
     ),
     'cyclohexane': (
-        ('C{3,4}', 'C{3,4}', 'C4', 'C4', 'C4', 'C4',),
-        ((0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0),),
+        ['C{3,4}', 'C{3,4}', 'C4', 'C4', 'C4', 'C4'],
+        [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0)],
     ),
     'amine I': (
-        (R, 'N3', H, H,),
-        ((0,1), (1, 2), (1, 3),),
+        [R, 'N3', H, H],
+        [(0,1), (1, 2), (1, 3)],
     ),
     'amine II': (
-        ('C4', 'N3', 'C4', H,),
-        ((0,1), (1, 2), (1, 3),),
+        ['C4', 'N3', 'C4', H],
+        [(0,1), (1, 2), (1, 3)],
     ),
     'amine III': (
-        ('C{3,4}', 'N3', 'C4', 'C4'),
-        ((0,1), (1, 2), (1, 3),),
+        ['C{3,4}', 'N3', 'C4', 'C4'],
+        [(0,1), (1, 2), (1, 3)],
     ),
     'ester': (
-        (R2, 'C3', 'O1', 'O2', 'C{3,4}',),
-        ((0, 1), (1, 2), (1, 3), (3, 4),),
+        [R2, 'C3', 'O1', 'O2', 'C{3,4}'],
+        [(0, 1), (1, 2), (1, 3), (3, 4)],
     ),
     'carboxylic acid': (
-        (R2, 'C3', 'O1', 'O2', H,),
-        ((0, 1), (1, 2), (1, 3), (3, 4),),
+        [R2, 'C3', 'O1', 'O2', H],
+        [(0, 1), (1, 2), (1, 3), (3, 4)],
     ),
     'carboxylate': (
-        (R2, 'C3', 'O1', 'O1',),
-        ((0, 1), (1, 2), (1, 3),),
+        [R2, 'C3', 'O1', 'O1'],
+        [(0, 1), (1, 2), (1, 3)],
     ),
     'ether': (
-        ('C4', 'O2', 'C4',),
-        ((0, 1), (1, 2),),
+        ['C4', 'O2', 'C4'],
+        [(0, 1), (1, 2)],
     ),
     'amide': (
-        (R2, 'C3', 'O1', 'N3', R, R),
-        ((0, 1), (1, 2), (1, 3), (3, 4), (3, 5),),
+        [R2, 'C3', 'O1', 'N3', R, R],
+        [(0, 1), (1, 2), (1, 3), (3, 4), (3, 5)],
     ),
     'hemiketal': (
-        (R, R, 'C4', 'O2', H, 'O2', R),
-        ((0, 2), (1, 2), (2, 3), (3, 4), (2, 5), (5, 6)),
+        [R, R, 'C4', 'O2', H, 'O2', R],
+        [(0, 2), (1, 2), (2, 3), (3, 4), (2, 5), (5, 6)],
     ),
     'ketone': (
-        ('C{3,4}', 'C3', 'O1', 'C{3,4}',),
-        ((0, 1), (1, 2), (1, 3),),
+        ['C{3,4}', 'C3', 'O1', 'C{3,4}'],
+        [(0, 1), (1, 2), (1, 3)],
     ),
     'aldehyde': (
-        (H, 'C3', 'O1', 'C{3,4}',),
-        ((0, 1), (1, 2), (1, 3),),
+        [H, 'C3', 'O1', 'C{3,4}'],
+        [(0, 1), (1, 2), (1, 3)],
     ),
     'nitrile': (
-        (R2, 'C2', 'N1',),
-        ((0, 1), (1, 2),),
+        [R2, 'C2', 'N1'],
+        [(0, 1), (1, 2)],
     ),
     'nitro': (
-        (R, 'N3', 'O1', 'O1',),
-        ((0, 1), (1, 2), (1, 3),),
+        [R, 'N3', 'O1', 'O1'],
+        [(0, 1), (1, 2), (1, 3)],
     ),
     'nitrophenyl': (
-        PHENYL_CORE[0] + ('N3', 'O1', 'O1',),
-        PHENYL_CORE[1] + ((5, 6), (6, 7), (6, 8)),
+        PHENYL_CORE[0] + ['N3', 'O1', 'O1'],
+        PHENYL_CORE[1] + [(5, 6), (6, 7), (6, 8)],
     ),
     'monochloro': MONO_HALOGENO('CL'),
     'dichloro': DI_HALOGENO('CL'),
@@ -193,46 +203,46 @@ PATTERNS = ({
     'triiodo': TRI_HALOGENO('I'),
     'tetraiodo': TETRA_HALOGENO('I'),
     'sulfonyl': (
-        (R, 'S4', 'O1', 'O1', R,),
-        ((0, 1), (1, 2), (1, 3), (1, 4),),
+        [R, 'S4', 'O1', 'O1', R],
+        [(0, 1), (1, 2), (1, 3), (1, 4)],
     ),
     'sulfinyl': (
-        (R, 'S3', 'O1', R,),
-        ((0, 1), (1, 2), (1, 3),),
+        [R, 'S3', 'O1', R],
+        [(0, 1), (1, 2), (1, 3)],
     ),
     'nitrate': (
-        (R, 'O2', 'N', 'O1', 'O1',),
-        ((0, 1), (1, 2), (2, 3), (2, 4),),
+        [R, 'O2', 'N', 'O1', 'O1'],
+        [(0, 1), (1, 2), (2, 3), (2, 4)],
     ),
     'cyclopropane': (
-        ('C4', 'C4', 'C4'),
-        ((0, 1), (1, 2), (2, 0),),
+        ['C4', 'C4', 'C4'],
+        [(0, 1), (1, 2), (2, 0)],
     ),
     'cyclobutane': (
-        ('C4', 'C4', 'C4', 'C4'),
-        ((0, 1), (1, 2), (2, 3), (3, 0),),
+        ['C4', 'C4', 'C4', 'C4'],
+        [(0, 1), (1, 2), (2, 3), (3, 0)],
     ),
     'urea': (
-        (R2, R2, 'N3', 'C3', 'O1', 'N3', R2, R2),
-        ((0, 2), (1, 2), (2, 3), (3, 4), (3, 5), (5, 6), (5, 7),),
+        [R2, R2, 'N3', 'C3', 'O1', 'N3', R2, R2],
+        [(0, 2), (1, 2), (2, 3), (3, 4), (3, 5), (5, 6), (5, 7)],
     ),
     'phosphate': (
-        (R2, 'O2', 'P4', 'O1', 'O{1,2}', 'O{1,2}',),
-        ((0, 1), (1, 2), (2, 3), (2, 4), (2, 5),),
+        [R2, 'O2', 'P4', 'O1', 'O{1,2}', 'O{1,2}'],
+        [(0, 1), (1, 2), (2, 3), (2, 4), (2, 5)],
     ),
     'imidazole ': (
-        ('N2', 'C3', 'C3', 'N3', 'C3',),
-        ((0, 1), (1, 2), (2, 3), (3, 4), (4, 0),),
+        ['N2', 'C3', 'C3', 'N3', 'C3'],
+        [(0, 1), (1, 2), (2, 3), (3, 4), (4, 0)],
     ),
     'aromatic amine II': (
-        ('N{2,3}', 'C3', 'C3', 'C3', 'C3',),
-        ((0, 1), (1, 2), (2, 3), (3, 4), (4, 0),),
+        ['N{2,3}', 'C3', 'C3', 'C3', 'C3'],
+        [(0, 1), (1, 2), (2, 3), (3, 4), (4, 0)],
     ),
 } if not DISABLE_PATTERNS else {})
 
-MONOVALENT = (1,)
+MONOVALENT = [1]
 HALOGEN = MONOVALENT
-CHALCOGEN = (1, 2, 3),
+CHALCOGEN = [1, 2, 3]
 
 DEFAULT_VALENCES = {
     'H': MONOVALENT,
@@ -240,53 +250,53 @@ DEFAULT_VALENCES = {
     'BR': HALOGEN,
     'CL': HALOGEN,
     'I': HALOGEN,
-    'C': (2, 3, 4,),
+    'C': [2, 3, 4],
     'O': CHALCOGEN,
-    'N': (1, 2, 3, 4,),
+    'N': [1, 2, 3, 4],
     'S': CHALCOGEN,
 }
 
 ATOM_CLASSES = {
-    'J': ('C', 'H',),
-    'X': ('F', 'BR', 'CL', 'I',),
+    'J': ['C', 'H'],
+    'X': ['F', 'BR', 'CL', 'I'],
 }
 
-def parse_atom_class(atom_class):
-    m =  search('^([A-Z]+){?([0-9]?),?([0-9]?)}?', atom_class)
+def parse_atom_class(atom_pattern: Atom_Pattern) -> Any:
+    m =  search('^([A-Z]+){?([0-9]?),?([0-9]?)}?', atom_pattern)
     assert m
     return m
 
-def types_and_valences_for_class(atom_class):
-    def atoms_for_class(atom_class):
-        m = parse_atom_class(atom_class)
+def types_and_valences_for_class(atom_pattern: Atom_Pattern):
+    def atoms_for_class(atom_pattern: Atom_Pattern) -> List[Element]:
+        m = parse_atom_class(atom_pattern)
 
         type_class = m.group(1)
 
         if type_class in ATOM_CLASSES:
             return ATOM_CLASSES[type_class]
         else:
-            return (type_class,)
+            return [type_class]
 
-    def valences_for_class(atom_class):
-        m = parse_atom_class(atom_class)
+    def valences_for_class(atom_pattern: Atom_Pattern) -> List[int]:
+        m = parse_atom_class(atom_pattern)
 
         if not m.group(2) or not m.group(3):
             start = [int(group) for group in (m.group(2), m.group(3)) if group]
             if len(start) == 0:
-                if atom_class in DEFAULT_VALENCES:
-                    return DEFAULT_VALENCES[atom_class]
+                if atom_pattern in DEFAULT_VALENCES:
+                    return DEFAULT_VALENCES[atom_pattern]
                 else:
-                    raise Exception(atom_class)
+                    raise Exception(atom_pattern)
             else:
                 start = start[0]
             end = start + 1
         else:
             start, end = int(m.group(2)), int(m.group(3)) + 1
 
-        return tuple(range(start, end))
+        return list(range(start, end))
 
-    if '|' in atom_class:
-        type_valence_list = atom_class.split('|')
+    if '|' in atom_pattern:
+        type_valence_list = atom_pattern.split('|')
     else:
         type_valence_list = list(map(
             lambda atom_class_valence: type_identifier_for(atom_class_valence[0], atom_class_valence[1]),
@@ -300,23 +310,23 @@ def types_and_valences_for_class(atom_class):
                                 sub(
                                     '^[A-Z]+',
                                     atom,
-                                    atom_class,
+                                    atom_pattern,
                                 ),
                             ),
                         ),
                     )
-                    for atom in atoms_for_class(atom_class)
+                    for atom in atoms_for_class(atom_pattern)
                 ],
                 [],
             ),
         ))
     return type_valence_list
 
-def atom_classes(types):
+def atom_classes(types: List[str]) -> int:
     return sum([1 for a_type in types if a_type in list(ATOM_CLASSES.keys())])
 
-def pattern_graph_for_pattern(pattern):
-    vertices_types, edges = pattern
+def pattern_graph_for_graph_pattern(graph_pattern: Graph_Pattern) -> Graph:
+    vertices_types, edges = graph_pattern
 
     graph = Graph(directed=False)
 
@@ -337,7 +347,7 @@ def pattern_graph_for_pattern(pattern):
 
 MAX_NUMBER_PERMUTATIONS = 100
 
-def graphs_for_pattern_graph(pattern_graph, pattern_identifier=''):
+def graphs_for_pattern_graph(pattern_graph: Graph, pattern_identifier: str = '') -> List[Graph]:
     get_vertex_type = lambda v: pattern_graph.vp.type[v]
 
     type_permutations = list(product(*[types_and_valences_for_class(get_vertex_type(v)) for v in pattern_graph.vertices()]))
@@ -356,7 +366,7 @@ def graphs_for_pattern_graph(pattern_graph, pattern_identifier=''):
         graphs.append(new_graph)
     return graphs
 
-def write_dummy_graph(n=10, cyclic=True):
+def write_dummy_graph(N: int = 10, cyclic: bool = True) -> Tuple[str, Any]:
     graph_file = 'data/dummy.gt'
 
     g = Graph(directed=False)
@@ -372,7 +382,7 @@ def write_dummy_graph(n=10, cyclic=True):
     g.save(graph_file)
     return (graph_file, vertex_types)
 
-def draw_graph(graph, fnme='graph'):
+def draw_graph(graph: Graph, fnme: str = 'graph') -> None:
     try:
         vertex_text=graph.vertex_properties['type']
     except:
@@ -394,9 +404,12 @@ def draw_graph(graph, fnme='graph'):
 )
 
 
-def get_interpreted_pattern_graphs():
-    pattern_graphs = [pattern_graph_for_pattern(pattern) for (moiety, pattern) in list(PATTERNS.items())]
-    interpreted_pattern_graphs = [(moiety, graphs_for_pattern_graph(pattern_graph, pattern_identifier=moiety)) for (moiety, pattern_graph) in zip(list(PATTERNS.keys()), pattern_graphs)]
+def get_interpreted_pattern_graphs() -> List[Tuple[Moiety, List[Graph]]]:
+    pattern_graphs = [pattern_graph_for_graph_pattern(pattern) for (moiety, pattern) in list(PATTERNS.items())]
+    interpreted_pattern_graphs = [
+        (moiety, graphs_for_pattern_graph(pattern_graph, pattern_identifier=moiety))
+        for (moiety, pattern_graph) in zip(list(PATTERNS.keys()), pattern_graphs)
+    ]
 
     if DRAW_PATTERN_GRAPHS:
         for (moiety, graph_list) in interpreted_pattern_graphs:
@@ -409,20 +422,22 @@ def get_interpreted_pattern_graphs():
             ]
     return interpreted_pattern_graphs
 
-def moieties_in_graph(super_graph, interpreted_pattern_graphs):
-    def match(moiety, graph_list):
-        return any([
-            topology.subgraph_isomorphism(
-                pattern_graph,
-                super_graph,
-                vertex_label=(
-                    pattern_graph.vertex_properties['type'],
-                    super_graph.vertex_properties['type'],
-                ),
-                generator=False,
-            )
-        for (i, pattern_graph) in enumerate(graph_list)
-        ])
+def moieties_in_graph(super_graph: Graph, interpreted_pattern_graphs) -> List[Moiety]:
+    def match(moiety: Moiety, graph_list: List[Graph]) -> bool:
+        return any(
+            [
+                topology.subgraph_isomorphism(
+                    pattern_graph,
+                    super_graph,
+                    vertex_label=(
+                        pattern_graph.vertex_properties['type'],
+                        super_graph.vertex_properties['type'],
+                    ),
+                    generator=False,
+                )
+            for (i, pattern_graph) in enumerate(graph_list)
+            ]
+        )
 
     return [
         moiety
@@ -434,7 +449,7 @@ from glob import glob
 
 TEST_PDBS = glob('data/*.pdb')
 
-def test_atom_class_parsing():
+def test_atom_class_parsing() -> None:
     TEST_DATA = (
         ('C', ['C2', 'C3', 'C4',]),
         ('C3', ['C3',]),
@@ -449,7 +464,7 @@ def test_atom_class_parsing():
         assert r == test_result, 'Error: pattern "{2}": {0} != {1}'.format(r, test_result, test_class)
     exit()
 
-def moieties_in_pdb_file(pdb_file, should_draw_graph=True, should_dump_graph=False, interpreted_pattern_graphs=None):
+def moieties_in_pdb_file(pdb_file: str, should_draw_graph: bool = True, should_dump_graph: bool = False, interpreted_pattern_graphs: Optional[Any] = None) -> List[Moiety]:
     if interpreted_pattern_graphs is None:
         interpreted_pattern_graphs = get_interpreted_pattern_graphs()
 
