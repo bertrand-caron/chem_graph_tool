@@ -1,6 +1,8 @@
 from itertools import product
 from os.path import exists, join
 from re import search, sub
+from functools import reduce
+from typing import List
 
 from py_graphs.pdb import Graph, load_graph, graph_draw, topology, graph_from_pdb, type_identifier_for
 
@@ -8,9 +10,13 @@ DRAW_PATTERN_GRAPHS = True
 
 DISABLE_PATTERNS = False
 
-R = ALKYL = 'C4|H1'
-R2 = R + '|C3'
-H = 'H'
+def OR(*x: List[str]) -> str:
+ return '|'.join(x)
+
+H = 'H1'
+R_NO_H = 'C4'
+R = ALKYL = OR(R_NO_H, H)
+R2 = OR(R, 'C3')
 
 PHENYL_CORE = (
     ('C3', 'C3', 'C3', 'C3', 'C3', 'C3',),
@@ -80,6 +86,10 @@ PATTERNS = ({
     ),
     'phenol': (
         PHENYL_CORE[0] + ('O2', H),
+        PHENYL_CORE[1] + ((5, 6), (6, 7),)
+    ),
+    'phenoxy': (
+        PHENYL_CORE[0] + ('O2', R_NO_H),
         PHENYL_CORE[1] + ((5, 6), (6, 7),)
     ),
     'aniline': (
@@ -214,6 +224,10 @@ PATTERNS = ({
         ('N2', 'C3', 'C3', 'N3', 'C3',),
         ((0, 1), (1, 2), (2, 3), (3, 4), (4, 0),),
     ),
+    'aromatic amine II': (
+        ('N{2,3}', 'C3', 'C3', 'C3', 'C3',),
+        ((0, 1), (1, 2), (2, 3), (3, 4), (4, 0),),
+    ),
 } if not DISABLE_PATTERNS else {})
 
 MONOVALENT = (1,)
@@ -274,8 +288,8 @@ def types_and_valences_for_class(atom_class):
     if '|' in atom_class:
         type_valence_list = atom_class.split('|')
     else:
-        type_valence_list = map(
-            lambda (atom_class, valence): type_identifier_for(atom_class, valence),
+        type_valence_list = list(map(
+            lambda atom_class_valence: type_identifier_for(atom_class_valence[0], atom_class_valence[1]),
              reduce(
                 lambda acc, e: acc + e,
                 [
@@ -295,11 +309,11 @@ def types_and_valences_for_class(atom_class):
                 ],
                 [],
             ),
-        )
+        ))
     return type_valence_list
 
 def atom_classes(types):
-    return sum([1 for a_type in types if a_type in ATOM_CLASSES.keys()])
+    return sum([1 for a_type in types if a_type in list(ATOM_CLASSES.keys())])
 
 def pattern_graph_for_pattern(pattern):
     vertices_types, edges = pattern
@@ -347,7 +361,7 @@ def write_dummy_graph(n=10, cyclic=True):
 
     g = Graph(directed=False)
     vertices = [g.add_vertex() for n in range(0, N)]
-    vertices_pairs = zip(vertices, vertices[1:] + (vertices[0:1] if cyclic else []))
+    vertices_pairs = list(zip(vertices, vertices[1:] + (vertices[0:1] if cyclic else [])))
     [g.add_edge(v_1, v_2) for (v_1, v_2) in vertices_pairs]
 
     vertex_types = g.new_vertex_property("string")
@@ -381,8 +395,8 @@ def draw_graph(graph, fnme='graph'):
 
 
 def get_interpreted_pattern_graphs():
-    pattern_graphs = [pattern_graph_for_pattern(pattern) for (moiety, pattern) in PATTERNS.items()]
-    interpreted_pattern_graphs = [(moiety, graphs_for_pattern_graph(pattern_graph, pattern_identifier=moiety)) for (moiety, pattern_graph) in zip(PATTERNS.keys(), pattern_graphs)]
+    pattern_graphs = [pattern_graph_for_pattern(pattern) for (moiety, pattern) in list(PATTERNS.items())]
+    interpreted_pattern_graphs = [(moiety, graphs_for_pattern_graph(pattern_graph, pattern_identifier=moiety)) for (moiety, pattern_graph) in zip(list(PATTERNS.keys()), pattern_graphs)]
 
     if DRAW_PATTERN_GRAPHS:
         for (moiety, graph_list) in interpreted_pattern_graphs:
@@ -460,5 +474,5 @@ if __name__ == '__main__':
         test_atom_class_parsing()
 
     for test_pdb in TEST_PDBS:
-        print test_pdb
-        print moieties_in_pdb_file(test_pdb, interpreted_pattern_graphs=interpreted_pattern_graphs)
+        print(test_pdb)
+        print(moieties_in_pdb_file(test_pdb, interpreted_pattern_graphs=interpreted_pattern_graphs))

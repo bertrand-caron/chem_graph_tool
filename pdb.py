@@ -1,4 +1,5 @@
-from itertools import cycle, izip, product
+from itertools import cycle, product
+from functools import reduce
 try:
     from graph_tool.all import Graph, load_graph, graph_draw
     from graph_tool import topology
@@ -36,8 +37,8 @@ def graph_from_pdb(pdb_str):
                 [
                     (i, j)
                     for (i, j) in map(
-                        lambda (i, j): (i - 1, j - 1),
-                        izip(cycle(connect_ids[0:1]), connect_ids[1:]),
+                        lambda i_j: (i_j[0] - 1, i_j[1] - 1),
+                        zip(cycle(connect_ids[0:1]), connect_ids[1:]),
                     )
                     if i < j
                 ]
