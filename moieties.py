@@ -1,4 +1,4 @@
-from itertools import product
+from itertools import product, combinations
 from os.path import exists, join
 from re import search, sub
 from functools import reduce
@@ -266,7 +266,7 @@ def parse_atom_class(atom_pattern: Atom_Pattern) -> Any:
     assert m
     return m
 
-def types_and_valences_for_class(atom_pattern: Atom_Pattern):
+def types_and_valences_for_class(atom_pattern: Atom_Pattern) -> List[str]:
     def atoms_for_class(atom_pattern: Atom_Pattern) -> List[Element]:
         m = parse_atom_class(atom_pattern)
 
@@ -350,7 +350,14 @@ MAX_NUMBER_PERMUTATIONS = 100
 def graphs_for_pattern_graph(pattern_graph: Graph, pattern_identifier: str = '') -> List[Graph]:
     get_vertex_type = lambda v: pattern_graph.vp.type[v]
 
-    type_permutations = list(product(*[types_and_valences_for_class(get_vertex_type(v)) for v in pattern_graph.vertices()]))
+    type_permutations = list(
+        product(
+            *[
+                types_and_valences_for_class(get_vertex_type(v))
+                for v in pattern_graph.vertices()
+            ],
+        ),
+    )
 
     assert len(type_permutations) <= MAX_NUMBER_PERMUTATIONS, '''Error: Unreasonably large number ({0}) of graphs for pattern identifier '{1}'. Aborting ...'''.format(
         len(type_permutations),
@@ -420,23 +427,25 @@ def get_interpreted_pattern_graphs() -> List[Tuple[Moiety, List[Graph]]]:
                 )
                 for (i, graph) in enumerate(graph_list)
             ]
+
     return interpreted_pattern_graphs
+
+def does_graph_match_graph(super_graph: Graph, sub_graph: Graph) -> bool:
+    return topology.subgraph_isomorphism(
+        sub_graph,
+        super_graph,
+        vertex_label=(
+            sub_graph.vertex_properties['type'],
+            super_graph.vertex_properties['type'],
+        ),
+        generator=False,
+    )
 
 def moieties_in_graph(super_graph: Graph, interpreted_pattern_graphs) -> List[Moiety]:
     def match(moiety: Moiety, graph_list: List[Graph]) -> bool:
         return any(
-            [
-                topology.subgraph_isomorphism(
-                    pattern_graph,
-                    super_graph,
-                    vertex_label=(
-                        pattern_graph.vertex_properties['type'],
-                        super_graph.vertex_properties['type'],
-                    ),
-                    generator=False,
-                )
+            does_graph_match_graph(super_graph, pattern_graph)
             for (i, pattern_graph) in enumerate(graph_list)
-            ]
         )
 
     return [
@@ -482,8 +491,17 @@ def moieties_in_pdb_file(pdb_file: str, should_draw_graph: bool = True, should_d
 
     return moieties_in_graph(molecule_graph, interpreted_pattern_graphs)
 
+def enforce_disjoint_patterns(interpreted_pattern_graphs: List[Tuple[Moiety, List[Graph]]]) -> None:
+    print('''INFO: Will make sure not two moieties are embedded in each others. NB: Takes several minutes ...''')
+    for ((moiety_1, graphs_1), (moiety_2, graphs_2)) in combinations(interpreted_pattern_graphs, r=2):
+        if any(does_graph_match_graph(graph_1, graph_2) or does_graph_match_graph(graph_2, graph_1) for graph_1 in graphs_1 for graph_2 in graphs_2):
+            print('ERROR: Found conflicting moieties: {0}'.format([moiety_1, moiety_2]))
+    print('''INFO: Success''')
+
 if __name__ == '__main__':
     interpreted_pattern_graphs = get_interpreted_pattern_graphs()
+
+    enforce_disjoint_patterns(interpreted_pattern_graphs)
 
     if True:
         test_atom_class_parsing()
