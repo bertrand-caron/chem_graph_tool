@@ -143,8 +143,8 @@ PATTERNS = ({
         [(0,1), (1, 2), (1, 3)],
     ),
     'enamine': (
-        ['C3', 'C3', 'N3', 'C4', 'C4'],
-        [(0, 1), (1, 2), (2, 3), (2, 4)],
+        ['C3', 'C3', 'N3', 'C4', 'C4', R],
+        [(0, 1), (1, 2), (2, 3), (2, 4), (1, 5)],
     ),
     'ester': (
         [R2, 'C3', 'O1', 'O2', 'C{3,4}'],
@@ -393,7 +393,7 @@ def write_dummy_graph(N: int = 10, cyclic: bool = True) -> Tuple[str, Any]:
     g.save(graph_file)
     return (graph_file, vertex_types)
 
-def draw_graph(graph: Graph, fnme: str = 'graph') -> None:
+def draw_graph(graph: Graph, fnme: str = 'graph', force_regen: bool = False) -> None:
     try:
         vertex_text=graph.vertex_properties['type']
     except:
@@ -403,16 +403,16 @@ def draw_graph(graph: Graph, fnme: str = 'graph') -> None:
     if not '.png' in fnme:
         fnme += '.png'
 
-    if exists(fnme):
+    if exists(fnme) and not force_regen:
         return
-
-    graph_draw(
-        graph,
-        vertex_text=vertex_text,
-        vertex_font_size=18,
-        output_size=(400, 400),
-        output=fnme,
-)
+    else:
+        graph_draw(
+            graph,
+            vertex_text=vertex_text,
+            vertex_font_size=18,
+            output_size=(400, 400),
+            output=fnme,
+        )
 
 
 def get_interpreted_pattern_graphs() -> List[Tuple[Moiety, List[Graph]]]:
