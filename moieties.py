@@ -1,5 +1,5 @@
 from itertools import product, combinations
-from os.path import exists, join
+from os.path import exists, join, dirname, abspath
 from re import search, sub
 from functools import reduce
 from typing import List, Tuple, Any, Optional
@@ -19,6 +19,8 @@ Moiety = str
 Element = str
 
 Graph_Pattern = Tuple[List[Atom_Pattern], List[Bond]]
+
+ROOT_DIR = dirname(abspath(__file__))
 
 def OR(*x: List[str]) -> str:
  return '|'.join(x)
@@ -393,7 +395,7 @@ def write_dummy_graph(N: int = 10, cyclic: bool = True) -> Tuple[str, Any]:
     g.save(graph_file)
     return (graph_file, vertex_types)
 
-def draw_graph(graph: Graph, fnme: str = 'graph', force_regen: bool = False) -> None:
+def draw_graph(graph: Graph, fnme: str = 'graph', force_regen: bool = False, output_size: Tuple[float, float] = (400, 400)) -> None:
     try:
         vertex_text=graph.vertex_properties['type']
     except:
@@ -410,7 +412,7 @@ def draw_graph(graph: Graph, fnme: str = 'graph', force_regen: bool = False) -> 
             graph,
             vertex_text=vertex_text,
             vertex_font_size=18,
-            output_size=(400, 400),
+            output_size=output_size,
             output=fnme,
         )
 
@@ -427,7 +429,7 @@ def get_interpreted_pattern_graphs() -> List[Tuple[Moiety, List[Graph]]]:
             [
                 draw_graph(
                     graph,
-                    fnme=join('patterns', moiety.replace(' ', '_') + '_' + str(i)),
+                    fnme=join(ROOT_DIR, 'patterns', moiety.replace(' ', '_') + '_' + str(i)),
                 )
                 for (i, graph) in enumerate(graph_list)
             ]
@@ -477,12 +479,11 @@ def test_atom_class_parsing() -> None:
         assert r == test_result, 'Error: pattern "{2}": {0} != {1}'.format(r, test_result, test_class)
     exit()
 
-def moieties_in_pdb_file(pdb_file: str, should_draw_graph: bool = True, should_dump_graph: bool = False, interpreted_pattern_graphs: Optional[Any] = None) -> List[Moiety]:
+def moieties_in_pdb(pdb_str: str, should_draw_graph: bool = True, should_dump_graph: bool = False, interpreted_pattern_graphs: Optional[Any] = None) -> List[Moiety]:
     if interpreted_pattern_graphs is None:
         interpreted_pattern_graphs = get_interpreted_pattern_graphs()
 
-    with open(pdb_file) as fh:
-        molecule_graph = graph_from_pdb(fh.read())
+    molecule_graph = graph_from_pdb(pdb_str)
 
     if should_draw_graph:
         draw_graph(
@@ -494,6 +495,17 @@ def moieties_in_pdb_file(pdb_file: str, should_draw_graph: bool = True, should_d
         molecule_graph.save(pdb_file.replace('.pdb', '.gt'))
 
     return moieties_in_graph(molecule_graph, interpreted_pattern_graphs)
+
+def moieties_in_pdb_file(pdb_file: str, should_draw_graph: bool = True, should_dump_graph: bool = False, interpreted_pattern_graphs: Optional[Any] = None) -> List[Moiety]:
+    with open(pdb_file) as fh:
+        pdb_str = fh.read()
+
+    return moieties_in_pdb(
+        pdb_str,
+        should_draw_graph=should_draw_graph,
+        should_dump_graph=should_dump_graph,
+        interpreted_pattern_graphs=interpreted_pattern_graphs,
+    )
 
 def enforce_disjoint_patterns(interpreted_pattern_graphs: List[Tuple[Moiety, List[Graph]]]) -> None:
     print('''INFO: Will make sure not two moieties are embedded in each others. NB: Takes several minutes ...''')
