@@ -397,10 +397,14 @@ def write_dummy_graph(N: int = 10, cyclic: bool = True) -> Tuple[str, Any]:
 
 def draw_graph(graph: Graph, fnme: str = 'graph', force_regen: bool = False, output_size: Tuple[float, float] = (400, 400)) -> None:
     try:
-        vertex_text=graph.vertex_properties['type']
+        vertex_text = graph.vertex_properties['type']
     except:
-        vertex_text=graph.vertex_index
+        vertex_text = graph.vertex_index
 
+    try:
+        edge_text = graph.edge_properties['type']
+    except:
+        edge_text = ''
 
     if not '.png' in fnme:
         fnme += '.png'
@@ -412,6 +416,8 @@ def draw_graph(graph: Graph, fnme: str = 'graph', force_regen: bool = False, out
             graph,
             vertex_text=vertex_text,
             vertex_font_size=18,
+            edge_text=edge_text,
+            edge_font_size=18,
             output_size=output_size,
             output=fnme,
         )
