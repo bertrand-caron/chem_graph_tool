@@ -3,8 +3,9 @@ from os.path import exists, join, dirname, abspath
 from re import search, sub
 from functools import reduce
 from typing import List, Tuple, Any, Optional
+from glob import glob
 
-from py_graphs.pdb import Graph, load_graph, graph_draw, topology, graph_from_pdb, type_identifier_for
+from chem_graph_tools.pdb import Graph, load_graph, graph_draw, topology, graph_from_pdb, type_identifier_for
 
 DRAW_PATTERN_GRAPHS = True
 
@@ -465,8 +466,6 @@ def moieties_in_graph(super_graph: Graph, interpreted_pattern_graphs) -> List[Mo
         for (moiety, graph_list) in interpreted_pattern_graphs
         if match(moiety, graph_list)
     ]
-
-from glob import glob
 
 TEST_PDBS = glob('data/*.pdb')
 

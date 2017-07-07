@@ -8,7 +8,7 @@ except:
     stderr.write('Please install graph-tool')
     raise
 
-from atb_helpers.pdb import is_pdb_atom_line, is_pdb_connect_line, pdb_fields
+from chemistry_helpers.pdb import is_pdb_atom_line, is_pdb_connect_line, pdb_fields
 
 def type_identifier_for(atom_type, valence):
     return '{0}{1}'.format(
