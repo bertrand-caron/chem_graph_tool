@@ -5,7 +5,7 @@ from functools import reduce
 from typing import List, Tuple, Any, Optional
 from glob import glob
 
-from chem_graph_tools.pdb import Graph, load_graph, graph_draw, topology, graph_from_pdb, type_identifier_for
+from chem_graph_tool.pdb import Graph, load_graph, graph_draw, topology, graph_from_pdb, type_identifier_for
 
 DRAW_PATTERN_GRAPHS = True
 
