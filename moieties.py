@@ -135,15 +135,19 @@ PATTERNS = ({
     ),
     'amine I': (
         [R, 'N3', H, H],
-        [(0,1), (1, 2), (1, 3)],
+        [(0, 1), (1, 2), (1, 3)],
     ),
     'amine II': (
         ['C4', 'N3', 'C4', H],
-        [(0,1), (1, 2), (1, 3)],
+        [(0, 1), (1, 2), (1, 3)],
     ),
     'amine III': (
         ['C4', 'N3', 'C4', 'C4'],
-        [(0,1), (1, 2), (1, 3)],
+        [(0, 1), (1, 2), (1, 3)],
+    ),
+    'ammonium': (
+        ['C4', 'N4', 'C4', 'C4', 'C4'],
+        [(0, 1), (1, 2), (1, 3), (1, 4)],
     ),
     'enamine': (
         ['C3', 'C3', 'N3', 'C4', 'C4', R],
@@ -484,19 +488,19 @@ def test_atom_class_parsing() -> None:
         assert r == test_result, 'Error: pattern "{2}": {0} != {1}'.format(r, test_result, test_class)
     exit()
 
-def moieties_in_pdb(pdb_str: str, should_draw_graph: bool = True, should_dump_graph: bool = False, interpreted_pattern_graphs: Optional[Any] = None) -> List[Moiety]:
+def moieties_in_pdb(pdb_str: str, should_draw_graph: bool = True, should_dump_graph: bool = False, interpreted_pattern_graphs: Optional[Any] = None, pdb_file: Optional[str] = None) -> List[Moiety]:
     if interpreted_pattern_graphs is None:
         interpreted_pattern_graphs = get_interpreted_pattern_graphs()
 
     molecule_graph = graph_from_pdb(pdb_str)
 
-    if should_draw_graph:
+    if should_draw_graph and pdb_file is not None:
         draw_graph(
             molecule_graph,
             fnme=pdb_file.replace('.pdb', '.png')
         )
 
-    if should_dump_graph:
+    if should_dump_graph and pdb_file is not None:
         molecule_graph.save(pdb_file.replace('.pdb', '.gt'))
 
     return moieties_in_graph(molecule_graph, interpreted_pattern_graphs)
@@ -510,6 +514,7 @@ def moieties_in_pdb_file(pdb_file: str, should_draw_graph: bool = True, should_d
         should_draw_graph=should_draw_graph,
         should_dump_graph=should_dump_graph,
         interpreted_pattern_graphs=interpreted_pattern_graphs,
+        pdb_file=pdb_file,
     )
 
 def enforce_disjoint_patterns(interpreted_pattern_graphs: List[Tuple[Moiety, List[Graph]]]) -> None:
