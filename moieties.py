@@ -407,6 +407,11 @@ def draw_graph(graph: Graph, fnme: str = 'graph', force_regen: bool = False, out
         vertex_text = graph.vertex_index
 
     try:
+        vertex_color = graph.vertex_properties['color']
+    except:
+        vertex_color = graph.vertex_index
+
+    try:
         edge_text = graph.edge_properties['type']
     except:
         edge_text = ''
@@ -421,6 +426,7 @@ def draw_graph(graph: Graph, fnme: str = 'graph', force_regen: bool = False, out
             graph,
             vertex_text=vertex_text,
             vertex_font_size=18,
+            vertex_fill_color=vertex_color,
             edge_text=edge_text,
             edge_font_size=18,
             output_size=output_size,
