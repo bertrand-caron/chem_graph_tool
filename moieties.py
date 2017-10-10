@@ -5,7 +5,7 @@ from functools import reduce
 from typing import List, Tuple, Any, Optional
 from glob import glob
 
-from chem_graph_tool.pdb import Graph, load_graph, graph_draw, topology, graph_from_pdb, type_identifier_for
+from chem_graph_tool.pdb import Graph, load_graph, graph_draw, topology, graph_from_pdb, type_identifier_for, sfdp_layout, PropertyMap
 
 DRAW_PATTERN_GRAPHS = True
 
@@ -400,7 +400,7 @@ def write_dummy_graph(N: int = 10, cyclic: bool = True) -> Tuple[str, Any]:
     g.save(graph_file)
     return (graph_file, vertex_types)
 
-def draw_graph(graph: Graph, fnme: str = 'graph', force_regen: bool = False, output_size: Tuple[float, float] = (400, 400)) -> None:
+def draw_graph(graph: Graph, pos: Optional[PropertyMap] = None, fnme: str = 'graph', force_regen: bool = False, output_size: Tuple[float, float] = (400, 400)) -> None:
     try:
         vertex_text = graph.vertex_properties['type']
     except:
@@ -424,6 +424,7 @@ def draw_graph(graph: Graph, fnme: str = 'graph', force_regen: bool = False, out
     else:
         graph_draw(
             graph,
+            pos=pos,
             vertex_text=vertex_text,
             vertex_font_size=18,
             vertex_fill_color=vertex_color,

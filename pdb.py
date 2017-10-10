@@ -2,7 +2,7 @@ from itertools import cycle, product
 from functools import reduce
 try:
     import numpy
-    from graph_tool.all import Graph, load_graph, graph_draw
+    from graph_tool.all import Graph, load_graph, graph_draw, sfdp_layout, PropertyMap
     from graph_tool import topology, seed_rng
     # Make sfdp_layout deterministic
     numpy.random.seed(42)
