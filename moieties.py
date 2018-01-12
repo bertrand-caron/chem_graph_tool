@@ -400,7 +400,14 @@ def write_dummy_graph(N: int = 10, cyclic: bool = True) -> Tuple[str, Any]:
     g.save(graph_file)
     return (graph_file, vertex_types)
 
-def draw_graph(graph: Graph, pos: Optional[PropertyMap] = None, fnme: str = 'graph', force_regen: bool = False, output_size: Tuple[float, float] = (400, 400)) -> None:
+def draw_graph(
+    graph: Graph,
+    pos: Optional[PropertyMap] = None,
+    fnme: str = 'graph',
+    force_regen: bool = False,
+    output_size: Tuple[float, float] = (400, 400),
+    default_extension: str = '.pdf',
+) -> None:
     try:
         vertex_text = graph.vertex_properties['type']
     except:
@@ -416,8 +423,8 @@ def draw_graph(graph: Graph, pos: Optional[PropertyMap] = None, fnme: str = 'gra
     except:
         edge_text = ''
 
-    if not '.png' in fnme:
-        fnme += '.png'
+    if not fnme.endswith(default_extension):
+        fnme += default_extension
 
     if exists(fnme) and not force_regen:
         return
@@ -433,7 +440,6 @@ def draw_graph(graph: Graph, pos: Optional[PropertyMap] = None, fnme: str = 'gra
             output_size=output_size,
             output=fnme,
         )
-
 
 def get_interpreted_pattern_graphs() -> List[Tuple[Moiety, List[Graph]]]:
     pattern_graphs = [pattern_graph_for_graph_pattern(pattern) for (moiety, pattern) in list(PATTERNS.items())]
@@ -504,7 +510,7 @@ def moieties_in_pdb(pdb_str: str, should_draw_graph: bool = True, should_dump_gr
     if should_draw_graph and pdb_file is not None:
         draw_graph(
             molecule_graph,
-            fnme=pdb_file.replace('.pdb', '.png')
+            fnme=pdb_file.replace('.pdb', '.pdf')
         )
 
     if should_dump_graph and pdb_file is not None:

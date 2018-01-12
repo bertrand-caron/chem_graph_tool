@@ -5,8 +5,8 @@ try:
     from graph_tool.all import Graph, load_graph, graph_draw, sfdp_layout, PropertyMap
     from graph_tool import topology, seed_rng
     # Make sfdp_layout deterministic
-    numpy.random.seed(42)
-    seed_rng(42)
+    numpy.random.seed(40)
+    seed_rng(40)
 except:
     from sys import stderr
     stderr.write('Please install graph-tool')
