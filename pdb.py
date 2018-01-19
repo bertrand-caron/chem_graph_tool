@@ -9,7 +9,7 @@ try:
     seed_rng(40)
 except:
     from sys import stderr
-    stderr.write('Please install graph-tool')
+    stderr.write('\n' + 'ERROR: Please install graph-tool')
     raise
 
 from chemistry_helpers.pdb import is_pdb_atom_line, is_pdb_connect_line, pdb_fields
