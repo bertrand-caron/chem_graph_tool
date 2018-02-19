@@ -225,6 +225,10 @@ PATTERNS = ({
         [R, 'O2', 'N', 'O1', 'O1'],
         [(0, 1), (1, 2), (2, 3), (2, 4)],
     ),
+    'hydrazine': (
+        [R, R, 'N3', 'N3', R, R],
+        [(0, 2), (1, 2), (2, 3), (3, 4), (3, 5)],
+    ),
     'cyclopropane': (
         ['C4', 'C4', 'C4'],
         [(0, 1), (1, 2), (2, 0)],
@@ -249,6 +253,10 @@ PATTERNS = ({
         ['N{2,3}', 'C3', 'C3', 'C3', 'C3'],
         [(0, 1), (1, 2), (2, 3), (3, 4), (4, 0)],
     ),
+    'silane': (
+        ['SI', R, R, R, R],
+        [(0, 1), (0, 2), (0, 3), (0, 4)],
+    ),
 } if not DISABLE_PATTERNS else {})
 
 MONOVALENT = [1]
@@ -265,6 +273,7 @@ DEFAULT_VALENCES = {
     'O': CHALCOGEN,
     'N': [1, 2, 3, 4],
     'S': CHALCOGEN,
+    'SI': [2, 3, 4],
 }
 
 ATOM_CLASSES = {
